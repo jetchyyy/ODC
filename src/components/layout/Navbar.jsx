@@ -16,52 +16,72 @@ export function Navbar() {
     }, []);
 
     const navLinks = [
-        { name: 'Home', path: '#home' },
-        { name: 'About', path: '#about' },
-        { name: 'Services', path: '#services' },
-        { name: 'Portfolio', path: '#portfolio' },
-        { name: 'Contact', path: '#contact' },
+        { name: 'Home', path: '/' },
+        { name: 'About', path: '/#about' },
+        { name: 'Services', path: '/#services' },
+        { name: 'Portfolio', path: '/portfolio' },
+        { name: 'Contact', path: '/contact' },
     ];
 
     return (
-        <motion.nav
-            className={cn(
-                'fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-transparent',
-                scrolled ? 'bg-background/80 backdrop-blur-md border-border py-4' : 'bg-transparent py-6'
-            )}
+        <motion.div
+            className="fixed top-0 left-0 right-0 z-50 px-4 pt-4"
             initial={{ y: -100 }}
             animate={{ y: 0 }}
             transition={{ duration: 0.5 }}
         >
-            <div className="container mx-auto px-6 md:px-12 flex items-center justify-between">
-                <a href="#home" className="text-3xl font-display font-bold tracking-tighter text-foreground flex items-center">
-                    <span>ODC</span>
-                </a>
-
-                {/* Desktop Nav */}
-                <div className="hidden md:flex items-center gap-8">
-                    {navLinks.map((link) => (
-                        <a
-                            key={link.name}
-                            href={link.path}
-                            className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors"
-                        >
-                            {link.name}
-                        </a>
-                    ))}
-                    <a href="#contact">
-                        <Button size="sm" variant="primary">Get Started</Button>
+            <nav className={cn(
+                'mx-auto max-w-5xl transition-all duration-300',
+                scrolled
+                    ? 'bg-white/85 backdrop-blur-md border border-border/60 rounded-full shadow-lg px-6 py-3'
+                    : 'bg-navy-950/35 backdrop-blur-sm border border-white/15 rounded-full px-6 py-3'
+            )}>
+                <div className="flex items-center justify-between">
+                    <a
+                        href="#home"
+                        className={cn(
+                            'text-2xl font-display font-bold tracking-tight transition-colors',
+                            scrolled ? 'text-foreground' : 'text-white'
+                        )}
+                    >
+                        ODC
                     </a>
-                </div>
 
-                {/* Mobile Toggle */}
-                <button
-                    className="md:hidden text-foreground"
-                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                >
-                    {mobileMenuOpen ? <X /> : <Menu />}
-                </button>
-            </div>
+                    {/* Desktop Nav */}
+                    <div className="hidden md:flex items-center gap-6">
+                        {navLinks.map((link) => (
+                            <a
+                                key={link.name}
+                                href={link.path}
+                                className={cn(
+                                    'text-sm font-medium transition-colors',
+                                    scrolled
+                                        ? 'text-foreground/70 hover:text-primary'
+                                        : 'text-white/80 hover:text-primary'
+                                )}
+                            >
+                                {link.name}
+                            </a>
+                        ))}
+                    </div>
+
+                    <div className="hidden md:flex">
+                        <a href="/contact">
+                            <Button size="sm" variant="primary" className="rounded-full px-6">Get Started</Button>
+                        </a>
+                    </div>
+
+                    {/* Mobile Toggle */}
+                    <button
+                        className={cn('md:hidden p-1 transition-colors', scrolled ? 'text-foreground' : 'text-white')}
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+                        aria-expanded={mobileMenuOpen}
+                    >
+                        {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                    </button>
+                </div>
+            </nav>
 
             {/* Mobile Menu */}
             <AnimatePresence>
@@ -70,26 +90,26 @@ export function Navbar() {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="md:hidden bg-background border-b border-border"
+                        className="mx-auto max-w-5xl mt-2 bg-white/90 backdrop-blur-md rounded-2xl border border-border/60 shadow-lg overflow-hidden"
                     >
-                        <div className="flex flex-col p-4 gap-4">
+                        <div className="flex flex-col p-4 gap-1">
                             {navLinks.map((link) => (
                                 <a
                                     key={link.name}
                                     href={link.path}
-                                    className="text-foreground hover:text-primary py-2 block"
+                                    className="text-foreground hover:text-primary py-2.5 px-4 rounded-xl hover:bg-secondary/50 transition-colors block font-medium"
                                     onClick={() => setMobileMenuOpen(false)}
                                 >
                                     {link.name}
                                 </a>
                             ))}
-                            <a href="#contact" onClick={() => setMobileMenuOpen(false)}>
-                                <Button className="w-full">Get Started</Button>
+                            <a href="/contact" onClick={() => setMobileMenuOpen(false)} className="mt-2">
+                                <Button className="w-full rounded-full">Get Started</Button>
                             </a>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
-        </motion.nav>
+        </motion.div>
     );
 }

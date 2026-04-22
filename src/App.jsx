@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Layout } from './components/layout/Layout';
-import { Hero } from './components/ui/Hero';
-import { AboutSection } from './components/sections/About';
-import { ServicesSection } from './components/sections/Services';
-import { PortfolioSection } from './components/sections/Portfolio';
-import { ContactSection } from './components/sections/Contact';
+import { Home } from './pages/Home';
+import { About } from './pages/About';
+import { Services } from './pages/Services';
+import { Portfolio } from './pages/Portfolio';
+import { Contact } from './pages/Contact';
 import { SplashScreen } from './components/ui/SplashScreen';
 import { Chatbot } from './components/ui/Chatbot';
 
@@ -30,11 +30,13 @@ function App() {
         ) : (
           <>
             <Layout key="layout">
-              <Hero />
-              <AboutSection />
-              <ServicesSection />
-              <PortfolioSection />
-              <ContactSection />
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/services" element={<Services />} />
+                <Route path="/portfolio" element={<Portfolio />} />
+                <Route path="/contact" element={<Contact />} />
+              </Routes>
             </Layout>
             <Chatbot />
           </>

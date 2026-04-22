@@ -50,43 +50,43 @@ export const Chatbot = () => {
 
   const handleQuickResponse = (key) => {
     const response = quickResponses[key];
-    
+
     // Add user question
-    setMessages(prev => [...prev, { 
-      role: 'user', 
-      content: response.question 
+    setMessages(prev => [...prev, {
+      role: 'user',
+      content: response.question
     }]);
-    
+
     // Add bot answer after a delay
     setTimeout(() => {
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: response.answer 
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: response.answer
       }]);
-      
+
       // Show buttons again after response
       setTimeout(() => {
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: 'Is there anything else I can help you with?' 
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: 'Is there anything else I can help you with?'
         }]);
       }, 500);
     }, 800);
   };
 
   const handleLiveAgent = () => {
-    setMessages(prev => [...prev, { 
-      role: 'user', 
-      content: 'Connect me to a live agent' 
+    setMessages(prev => [...prev, {
+      role: 'user',
+      content: 'Connect me to a live agent'
     }]);
-    
+
     setIsLoading(true);
-    
+
     // Show loading for 10 seconds before showing the message
     setTimeout(() => {
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: '❌ No agents are online today. Please try again another time or use the contact form for inquiries. We typically respond within 24 hours!' 
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: '❌ No agents are online today. Please try again another time or use the contact form for inquiries. We typically respond within 24 hours!'
       }]);
       setIsLoading(false);
     }, 10000); // 10 seconds delay
@@ -97,8 +97,8 @@ export const Chatbot = () => {
       {/* Chat Button */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full p-4 shadow-2xl hover:shadow-purple-500/50 transition-all duration-300"
-        whileHover={{ scale: 1.1 }}
+        className="fixed bottom-6 right-6 z-50 bg-black text-white dark:bg-white dark:text-black rounded-full p-4 shadow-xl hover:scale-105 transition-all duration-300 flex items-center justify-center border border-transparent dark:border-white/20"
+        whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         initial={{ opacity: 0, y: 100 }}
         animate={{ opacity: 1, y: 0 }}
@@ -143,12 +143,15 @@ export const Chatbot = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 100, scale: 0.8 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed bottom-24 right-6 z-50 w-96 h-[600px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 dark:border-gray-700"
+            className="fixed bottom-24 right-6 z-50 w-96 h-[600px] bg-background rounded-xl shadow-lg flex flex-col overflow-hidden border border-border/50 backdrop-blur-sm"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4 text-white">
-              <h3 className="font-semibold text-lg">Chat Assistant</h3>
-              <p className="text-sm opacity-90">We're here to help!</p>
+            <div className="bg-background/80 backdrop-blur-md p-4 text-foreground border-b border-border/50 flex items-center justify-between">
+              <div>
+                <h3 className="font-medium text-sm">Assistant</h3>
+                <p className="text-xs text-foreground/60">Typically replies instantly</p>
+              </div>
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
             </div>
 
             {/* Messages */}
@@ -162,103 +165,101 @@ export const Chatbot = () => {
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-2 ${
-                      message.role === 'user'
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                    }`}
+                    className={`max-w-[85%] rounded-2xl px-4 py-3 ${message.role === 'user'
+                        ? 'bg-foreground text-background rounded-br-sm'
+                        : 'bg-muted text-foreground rounded-bl-sm border border-border/50'
+                      }`}
                   >
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   </div>
                 </motion.div>
               ))}
-              
+
               {isLoading && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="flex justify-start"
                 >
-                  <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-3">
+                  <div className="bg-muted text-foreground rounded-2xl rounded-bl-sm border border-border/50 px-4 py-3">
                     <div className="flex items-center space-x-2">
                       <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        <div className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                       </div>
-                      <span className="text-xs text-gray-600 dark:text-gray-400">Connecting to agent...</span>
                     </div>
                   </div>
                 </motion.div>
               )}
-              
+
               <div ref={messagesEndRef} />
             </div>
 
             {/* Quick Response Buttons */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-2 max-h-64 overflow-y-auto">
+            <div className="p-4 bg-background/50 backdrop-blur border-t border-border/50 space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleQuickResponse('services')}
-                  className="px-3 py-2 text-sm bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-300"
+                  className="px-3 py-2 text-xs font-medium bg-muted hover:bg-muted/80 text-foreground rounded-full transition-colors border border-border/50"
                 >
-                  📋 Our Services
+                  Services
                 </motion.button>
-                
+
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleQuickResponse('portfolio')}
-                  className="px-3 py-2 text-sm bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-300"
+                  className="px-3 py-2 text-xs font-medium bg-muted hover:bg-muted/80 text-foreground rounded-full transition-colors border border-border/50"
                 >
-                  💼 Portfolio
+                  Portfolio
                 </motion.button>
-                
+
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleQuickResponse('pricing')}
-                  className="px-3 py-2 text-sm bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-300"
+                  className="px-3 py-2 text-xs font-medium bg-muted hover:bg-muted/80 text-foreground rounded-full transition-colors border border-border/50"
                 >
-                  💰 Pricing
+                  Pricing
                 </motion.button>
-                
+
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleQuickResponse('contact')}
-                  className="px-3 py-2 text-sm bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-300"
+                  className="px-3 py-2 text-xs font-medium bg-muted hover:bg-muted/80 text-foreground rounded-full transition-colors border border-border/50"
                 >
-                  📧 Contact
+                  Contact
                 </motion.button>
-                
+
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleQuickResponse('timeline')}
-                  className="px-3 py-2 text-sm bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-300"
+                  className="px-3 py-2 text-xs font-medium bg-muted hover:bg-muted/80 text-foreground rounded-full transition-colors border border-border/50"
                 >
-                  ⏱️ Timeline
+                  Timeline
                 </motion.button>
-                
+
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleQuickResponse('technology')}
-                  className="px-3 py-2 text-sm bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-300"
+                  className="px-3 py-2 text-xs font-medium bg-muted hover:bg-muted/80 text-foreground rounded-full transition-colors border border-border/50"
                 >
-                  💻 Technology
+                  Technology
                 </motion.button>
               </div>
-              
+
               {/* Live Agent Button */}
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
                 onClick={handleLiveAgent}
-                className="w-full px-4 py-3 text-sm bg-green-500 hover:bg-green-600 text-white rounded-lg hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2"
+                className="w-full px-4 py-2.5 text-xs font-medium bg-foreground text-background rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center space-x-2"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
