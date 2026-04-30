@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import { Button } from '../ui/Button';
+npm rimport { motion } from 'framer-motion';
+import { Button } from '../ui/button';
 import { Mail, Phone, MapPin, Send, Facebook, Linkedin, Instagram } from 'lucide-react';
 
 const socialLinks = [
