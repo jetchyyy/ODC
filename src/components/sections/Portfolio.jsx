@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../ui/button';
 import { X } from 'lucide-react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -72,9 +72,13 @@ export function PortfolioSection() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const isPortfolioPage = location.pathname === '/portfolio';
+    const projectParam = isPortfolioPage ? Number(searchParams.get('project')) : 0;
+    const queryProject = projectParam ? projects.find((project) => project.id === projectParam) : null;
+    const currentProject = selectedProject || queryProject;
+    const displayedCategory = queryProject ? queryProject.category : activeCategory;
 
     useEffect(() => {
-        if (selectedProject) {
+        if (currentProject) {
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = 'unset';
@@ -82,27 +86,10 @@ export function PortfolioSection() {
         return () => {
             document.body.style.overflow = 'unset';
         };
-    }, [selectedProject]);
-
-    useEffect(() => {
-        if (!isPortfolioPage) {
-            return;
-        }
-
-        const projectParam = Number(searchParams.get('project'));
-        if (!projectParam) {
-            return;
-        }
-
-        const matched = projects.find((project) => project.id === projectParam);
-        if (matched) {
-            setSelectedProject(matched);
-            setActiveCategory(matched.category);
-        }
-    }, [isPortfolioPage, searchParams]);
+    }, [currentProject]);
 
     const filteredProjects = projects.filter(
-        (project) => activeCategory === 'All' || project.category === activeCategory
+        (project) => displayedCategory === 'All' || project.category === displayedCategory
     );
 
     const openProject = (project) => {
@@ -123,9 +110,10 @@ export function PortfolioSection() {
     };
 
     return (
-        <section id="portfolio" className="pt-24 md:pt-32 pb-20 bg-background relative overflow-hidden">
+        <section id="portfolio" className="ambient-light-section ambient-portfolio pt-24 md:pt-32 pb-20 relative overflow-hidden">
+            <div className="section-ambient-orb section-ambient-orb-left" />
             <div className="container mx-auto px-6 md:px-12 relative z-10">
-                <motion.div
+                <Motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
@@ -143,7 +131,7 @@ export function PortfolioSection() {
                                 key={category}
                                 onClick={() => setActiveCategory(category)}
                                 className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${
-                                    activeCategory === category
+                                    displayedCategory === category
                                         ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
                                         : 'text-muted-foreground hover:text-foreground border border-border hover:border-primary/30 bg-white'
                                     }`}
@@ -152,15 +140,15 @@ export function PortfolioSection() {
                             </button>
                         ))}
                     </div>
-                </motion.div>
+                </Motion.div>
 
-                <motion.div
+                <Motion.div
                     layout
                     className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                 >
                     <AnimatePresence mode='popLayout'>
                         {filteredProjects.map((project) => (
-                            <motion.div
+                            <Motion.div
                                 layout
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
@@ -192,13 +180,13 @@ export function PortfolioSection() {
                                         </svg>
                                     </span>
                                 </div>
-                            </motion.div>
+                            </Motion.div>
                         ))}
                     </AnimatePresence>
-                </motion.div>
+                </Motion.div>
 
                 {!isPortfolioPage && (
-                    <motion.div
+                    <Motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
@@ -225,22 +213,22 @@ export function PortfolioSection() {
                                 </button>
                             ))}
                         </div>
-                    </motion.div>
+                    </Motion.div>
                 )}
             </div>
 
             {/* Project Modal */}
             <AnimatePresence>
-                {selectedProject && (
+                {currentProject && (
                     <div className="fixed inset-0 z-100 flex items-center justify-center p-4 sm:p-6 text-left">
-                        <motion.div
+                        <Motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             className="fixed inset-0 bg-background/80 backdrop-blur-sm"
                             onClick={closeProject}
                         />
-                        <motion.div
+                        <Motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -255,20 +243,20 @@ export function PortfolioSection() {
 
                             <div className="w-full md:w-1/2 h-64 md:h-auto min-h-75 relative bg-secondary/10 flex items-center justify-center p-4">
                                 <img
-                                    src={selectedProject.image}
-                                    alt={selectedProject.title}
+                                    src={currentProject.image}
+                                    alt={currentProject.title}
                                     className="w-full h-full object-contain rounded-lg"
                                 />
                             </div>
                             <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
                                 <span className="text-sm font-semibold tracking-wider text-primary uppercase mb-2 block">
-                                    {selectedProject.category}
+                                    {currentProject.category}
                                 </span>
                                 <h3 className="text-3xl md:text-4xl font-bold mb-4">
-                                    {selectedProject.title}
+                                    {currentProject.title}
                                 </h3>
                                 <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-                                    {selectedProject.description}
+                                    {currentProject.description}
                                 </p>
 
                                 <div className="flex gap-4 mt-auto pt-8 border-t border-border/50">
@@ -277,10 +265,11 @@ export function PortfolioSection() {
                                     </Button>
                                 </div>
                             </div>
-                        </motion.div>
+                        </Motion.div>
                     </div>
                 )}
             </AnimatePresence>
         </section>
     );
 }
+

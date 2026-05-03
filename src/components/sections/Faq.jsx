@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { Button } from '../ui/button';
 
@@ -30,9 +30,10 @@ export function FaqSection() {
     const [openIndex, setOpenIndex] = useState(0);
 
     return (
-        <section className="pt-24 md:pt-32 pb-20 bg-background relative overflow-hidden">
-            <div className="container mx-auto px-6 md:px-12 max-w-4xl">
-                <motion.div
+        <section className="ambient-light-section ambient-faq pt-24 md:pt-32 pb-20 relative overflow-hidden">
+            <div className="section-ambient-orb section-ambient-orb-right" />
+            <div className="container mx-auto px-6 md:px-12 max-w-4xl relative z-10">
+                <Motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
@@ -45,7 +46,7 @@ export function FaqSection() {
                     <p className="text-muted-foreground text-lg leading-relaxed">
                         Quick answers to common questions about pricing, timelines, and collaboration.
                     </p>
-                </motion.div>
+                </Motion.div>
 
                 <div className="space-y-4">
                     {faqs.map((item, index) => {
@@ -71,7 +72,7 @@ export function FaqSection() {
 
                                 <AnimatePresence initial={false}>
                                     {isOpen && (
-                                        <motion.div
+                                        <Motion.div
                                             initial={{ height: 0, opacity: 0 }}
                                             animate={{ height: 'auto', opacity: 1 }}
                                             exit={{ height: 0, opacity: 0 }}
@@ -79,7 +80,7 @@ export function FaqSection() {
                                             className="px-5 md:px-6"
                                         >
                                             <p className="pb-5 text-muted-foreground leading-relaxed">{item.answer}</p>
-                                        </motion.div>
+                                        </Motion.div>
                                     )}
                                 </AnimatePresence>
                             </div>
@@ -97,3 +98,4 @@ export function FaqSection() {
         </section>
     );
 }
+

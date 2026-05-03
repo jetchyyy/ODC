@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { Code, Smartphone, Cloud, Database, Palette, ArrowRight, Layers } from 'lucide-react';
 
 const services = [
@@ -36,12 +36,11 @@ const services = [
 
 export function ServicesSection() {
     return (
-        <section id="services" className="pt-24 md:pt-32 pb-20 bg-secondary/40 relative overflow-hidden">
-            {/* Subtle orange glow */}
-            <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        <section id="services" className="ambient-light-section ambient-services pt-24 md:pt-32 pb-20 relative overflow-hidden">
+            <div className="section-ambient-orb section-ambient-orb-right" />
 
             <div className="container mx-auto px-6 md:px-12 relative z-10">
-                <motion.div
+                <Motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
@@ -54,11 +53,11 @@ export function ServicesSection() {
                     <p className="text-muted-foreground max-w-xl mx-auto text-lg leading-relaxed">
                         Every engagement is mapped to a target result, from better patient or customer flow to stronger conversion and more reliable operations.
                     </p>
-                </motion.div>
+                </Motion.div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {services.map((service, index) => (
-                        <motion.div
+                        <Motion.div
                             key={index}
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
@@ -84,11 +83,12 @@ export function ServicesSection() {
                             <div className="flex items-center gap-1.5 text-xs font-semibold text-primary/40 group-hover:text-primary group-hover:gap-2 transition-all duration-300">
                                 Learn more <ArrowRight className="w-3 h-3" />
                             </div>
-                        </motion.div>
+                        </Motion.div>
                     ))}
                 </div>
             </div>
         </section>
     );
 }
+
 

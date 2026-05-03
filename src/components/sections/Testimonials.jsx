@@ -24,7 +24,8 @@ const testimonials = [
 
 export function TestimonialsSection() {
     return (
-        <section className="pt-24 md:pt-32 pb-20 bg-secondary/35 relative overflow-hidden">
+        <section className="ambient-light-section ambient-testimonials pt-24 md:pt-32 pb-20 relative overflow-hidden">
+            <div className="section-ambient-orb section-ambient-orb-right" />
             <div className="container mx-auto px-6 md:px-12 relative z-10">
                 <Motion.div
                     initial={{ opacity: 0, y: 20 }}

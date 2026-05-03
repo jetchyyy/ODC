@@ -8,6 +8,7 @@ import {
     Circle,
     Code2,
     Database,
+    ExternalLink,
     FileCode2,
     Github,
     Globe2,
@@ -15,6 +16,7 @@ import {
     MessageSquareText,
     Search,
     ShieldCheck,
+    Stethoscope,
     Zap,
 } from 'lucide-react';
 
@@ -77,26 +79,93 @@ const featureCards = [
     },
 ];
 
-const projectGallery = [
+const businessSystemShowcases = [
     {
-        title: 'Odyssey Family Clinic',
-        type: 'Clinic management',
-        image: '/odysseyfamilyclinic.jpg',
-    },
-    {
-        title: 'IMS-US',
-        type: 'Professional portfolio',
-        image: '/imsus.png',
-    },
-    {
-        title: 'Ngosiok Marketing',
-        type: 'Corporate portfolio',
-        image: '/ngosiokmarketing.jpg',
+        title: 'The Pickle Point Cebu',
+        type: 'Popular court booking platform',
+        logo: '/logos/picklepointnewlogo.jpg',
+        preview: '/thepicklepointcebu.jpg',
+        href: 'https://thepicklepointcebu.com',
+        description: 'A pickleball court booking website built for reservations, court discovery, and a fast path from visitor interest to scheduled play.',
+        featured: true,
+        theme: 'pickle',
     },
     {
         title: 'Firsel Tattoo',
-        type: 'Artist portfolio',
-        image: '/firseltattoo.png',
+        type: 'Tattoo artist portfolio',
+        logo: '/logos/firseltattoologo.jpg',
+        preview: '/firseltattoo.png',
+        href: 'https://firseltattoo.ink',
+        description: 'A specialized tattoo artist portfolio that centers visual work, studio identity, and booking intent in one polished landing experience.',
+        theme: 'ink',
+    },
+    {
+        title: 'Ngosiok Marketing',
+        type: 'Corporate portfolio website',
+        logo: '/logos/ngosiokmarketinglogo.jpg',
+        preview: '/ngosiokmarketing.jpg',
+        href: '/ngosiokmarketing.jpg',
+        description: 'A corporate portfolio landing page for presenting brand credibility, company information, and service pathways with a clean business presence.',
+        theme: 'commerce',
+    },
+    {
+        title: 'IMS-US',
+        type: 'Professional portfolio website',
+        logo: '/logos/ims-uslogo.png',
+        preview: '/imsus.png',
+        href: 'https://ims-us.com',
+        description: 'A professional web presence for International Marketing Services, shaped around trust, structured services, and clear conversion routes.',
+        theme: 'blue',
+    },
+    {
+        title: 'MediQuick',
+        type: 'Medicine e-commerce tablet UI',
+        logo: '/logos/mediquicklogo.jpg',
+        preview: '/MediQuick.png',
+        href: 'https://mediquick.space',
+        description: 'A tablet-view medicine e-commerce and inventory interface designed for quick browsing, product clarity, and efficient stock workflows.',
+        theme: 'medical',
+        tablet: true,
+    },
+    {
+        title: 'The Knee Arthritis & Orthopaedic Institute',
+        type: 'Orthopaedic clinic landing page',
+        icon: Stethoscope,
+        preview: '/thekneearthritis&orthopaedicinstitute.png',
+        href: '/thekneearthritis&orthopaedicinstitute.png',
+        description: 'A healthcare landing page for orthopaedic services with a clinical tone, readable service structure, and patient-focused presentation.',
+        theme: 'clinic',
+    },
+];
+
+const governmentShowcases = [
+    {
+        title: 'Provincial Accounting Office',
+        agency: 'Provincial Government of Surigao del Norte',
+        logo: '/logos/surigaodelnorte.jpg',
+        preview: '/government/pacco.jpg',
+        href: '/government/pacco.jpg',
+        theme: 'civic-gold',
+        description: 'A formal landing page for accounting services, public-facing office information, and province-level digital presence.',
+    },
+    {
+        title: 'Provincial General Services Office',
+        agency: 'Provincial Government of Surigao del Norte',
+        logo: '/logos/surigaodelnorte.jpg',
+        preview: '/government/pgso.jpg',
+        href: '/government/pgso.jpg',
+        theme: 'civic-green',
+        description: 'A matching government office landing page with procurement, services, and administrative information structured for quick access.',
+    },
+    {
+        title: 'PDRRMO Dispatch Tracker',
+        agency: 'Tablet dispatch monitoring display',
+        logo: '/logos/pdrrmo.jpg',
+        preview: '/government/dispatchtracker.jpg',
+        href: '/government/dispatchtracker.jpg',
+        theme: 'dispatch-red',
+        description: 'A tablet-optimized dispatch tracker interface for monitoring emergency response activity and operational status.',
+        tablet: true,
     },
 ];
 
@@ -180,17 +249,6 @@ function ProductWindow({ variant = 'light', className = '' }) {
     );
 }
 
-function CodePanel() {
-    return (
-        <div className="code-panel">
-            <div className="code-row cyan">npm create vite@latest odc-system</div>
-            <div className="code-row">connect supabase workflow tables</div>
-            <div className="code-row">ship booking + admin dashboard</div>
-            <div className="code-row dim">status: ready for client handoff</div>
-        </div>
-    );
-}
-
 function SectionHeader({ eyebrow, title, copy, align = 'left' }) {
     return (
         <Motion.div
@@ -223,32 +281,62 @@ function LogoMarquee({ items, reverse = false, compact = false }) {
 }
 
 function HeroShowcase() {
+    const devices = {
+        laptop: {
+            title: 'The Pickle Point Cebu',
+            type: 'Laptop landing page',
+            image: '/thepicklepointcebu.jpg',
+            href: 'https://thepicklepointcebu.com',
+        },
+        tablet: {
+            title: 'PDRRMO Dispatch Tracker',
+            type: 'Splash Screen',
+            image: 'public\\government\\dispatchtracker.jpg',
+        },
+    };
+
     return (
-        <div className="hero-showcase" aria-hidden="true">
-            <Motion.div
+        <div className="hero-showcase">
+            <Motion.a
+                href={devices.laptop.href}
+                target="_blank"
+                rel="noreferrer"
                 initial={{ opacity: 0, y: 28, rotate: -1 }}
                 animate={{ opacity: 1, y: 0, rotate: 0 }}
                 transition={{ duration: 0.8, delay: 0.35 }}
-                className="hero-window-one"
+                className="hero-device hero-laptop"
+                aria-label={`Open ${devices.laptop.title}`}
             >
-                <ProductWindow />
-            </Motion.div>
-            <Motion.div
-                initial={{ opacity: 0, y: 36, x: 20 }}
-                animate={{ opacity: 1, y: 0, x: 0 }}
+                <div className="device-topbar">
+                    <span className="device-dots" />
+                    <span>{devices.laptop.title}</span>
+                    <span>{devices.laptop.type}</span>
+                </div>
+                <div className="device-screen">
+                    <img src={devices.laptop.image} alt={`${devices.laptop.title} landing page preview`} />
+                </div>
+                <div className="laptop-base" />
+            </Motion.a>
+
+            <Motion.a
+                href={devices.tablet.href}
+                target="_blank"
+                rel="noreferrer"
+                initial={{ opacity: 0, y: 36, x: 24, rotate: 4 }}
+                animate={{ opacity: 1, y: 0, x: 0, rotate: 0 }}
                 transition={{ duration: 0.9, delay: 0.45 }}
-                className="hero-window-two"
+                className="hero-device hero-tablet"
+                aria-label={`Open ${devices.tablet.title}`}
             >
-                <ProductWindow />
-            </Motion.div>
-            <Motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
-                className="hero-code-card"
-            >
-                <CodePanel />
-            </Motion.div>
+                <div className="tablet-camera" />
+                <div className="device-screen">
+                    <img src={devices.tablet.image} alt={`${devices.tablet.title} tablet landing page preview`} />
+                </div>
+                <div className="device-caption">
+                    <span>{devices.tablet.type}</span>
+                    <strong>{devices.tablet.title}</strong>
+                </div>
+            </Motion.a>
         </div>
     );
 }
@@ -258,6 +346,44 @@ function FeatureImage({ src, alt }) {
         <div className="feature-project-image">
             <img src={src} alt={alt} loading="lazy" />
         </div>
+    );
+}
+
+function BusinessSystemCard({ item, index }) {
+    const Icon = item.icon;
+
+    return (
+        <Motion.a
+            href={item.href}
+            target="_blank"
+            rel="noreferrer"
+            {...sectionMotion}
+            transition={{ duration: 0.75, delay: index * 0.07 }}
+            className={`business-system-card ${item.featured ? 'is-featured' : ''} ${item.tablet ? 'is-tablet' : ''} ${item.theme}`}
+            aria-label={`Open ${item.title}`}
+        >
+            <div className="business-system-preview">
+                <img src={item.preview} alt={`${item.title} landing page preview`} loading="lazy" />
+            </div>
+            <div className="business-system-content">
+                <div className="business-logo-stage">
+                    {item.logo ? (
+                        <img src={item.logo} alt={`${item.title} logo`} loading="lazy" />
+                    ) : (
+                        <Icon className="h-12 w-12" aria-hidden="true" />
+                    )}
+                </div>
+                <div className="business-system-copy">
+                    <span>{item.type}</span>
+                    <h3>{item.title}</h3>
+                    <p>{item.description}</p>
+                </div>
+                <span className="business-open-link">
+                    {item.href.startsWith('http') ? 'Open website' : 'Open preview'}
+                    <ExternalLink className="h-3.5 w-3.5" />
+                </span>
+            </div>
+        </Motion.a>
     );
 }
 
@@ -376,26 +502,16 @@ function TechnicalDocs() {
                 <Motion.div {...sectionMotion} className="docs-showcase">
                     <div className="docs-copy">
                         <span className="soft-pill amber">Popular</span>
-                        <h3>Everything your team needs to run the process.</h3>
+                        <h3>The Pickle Point Cebu leads the system showcase.</h3>
                         <p>
-                            From React interfaces to Supabase data models, the implementation is shaped around business tasks, user roles, records, and day-to-day handoffs.
+                            Logo, landing page, and booking-focused experience are presented together so the identity and product story feel connected.
                         </p>
                     </div>
-                    <ProductWindow className="docs-window" />
+                    <BusinessSystemCard item={businessSystemShowcases[0]} index={0} />
                 </Motion.div>
-                <div className="project-gallery">
-                    {projectGallery.map((project, index) => (
-                        <Motion.article
-                            key={project.title}
-                            {...sectionMotion}
-                            transition={{ duration: 0.7, delay: index * 0.06 }}
-                        >
-                            <img src={project.image} alt={`${project.title} project screenshot`} loading="lazy" />
-                            <div>
-                                <span>{project.type}</span>
-                                <h3>{project.title}</h3>
-                            </div>
-                        </Motion.article>
+                <div className="business-system-grid">
+                    {businessSystemShowcases.slice(1).map((item, index) => (
+                        <BusinessSystemCard key={item.title} item={item} index={index + 1} />
                     ))}
                 </div>
                 <div className="document-mode-grid">
@@ -413,6 +529,58 @@ function TechnicalDocs() {
                             </Motion.article>
                         );
                     })}
+                </div>
+            </div>
+        </section>
+    );
+}
+
+function GovernmentShowcase() {
+    return (
+        <section className="landing-section government-showcase-section">
+            <div className="landing-shell">
+                <div className="government-showcase-header">
+                    <SectionHeader
+                        title="Government systems with matched identity"
+                        copy="Each showcase pairs the agency logo with its corresponding landing page or operational display, so the brand and interface feel connected from the first click."
+                    />
+                    <a href="/government/pacco.jpg" target="_blank" rel="noreferrer" className="tiny-link showcase-header-link">
+                        Open sample
+                        <ExternalLink className="h-3 w-3" />
+                    </a>
+                </div>
+
+                <div className="government-showcase-grid">
+                    {governmentShowcases.map((item, index) => (
+                        <Motion.a
+                            key={item.title}
+                            href={item.href}
+                            target="_blank"
+                            rel="noreferrer"
+                            {...sectionMotion}
+                            transition={{ duration: 0.75, delay: index * 0.08 }}
+                            className={`government-showcase-card ${item.theme} ${item.tablet ? 'is-tablet' : ''}`}
+                            aria-label={`Open ${item.title} landing page preview`}
+                        >
+                            <div className="showcase-copy-block">
+                                <div className="showcase-logo-lockup">
+                                    <img src={item.logo} alt={`${item.title} logo`} loading="lazy" />
+                                    <div>
+                                        <span>{item.agency}</span>
+                                        <h3>{item.title}</h3>
+                                    </div>
+                                </div>
+                                <p>{item.description}</p>
+                                <span className="showcase-open-link">
+                                    View landing page
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                </span>
+                            </div>
+                            <div className="showcase-preview-frame">
+                                <img src={item.preview} alt={`${item.title} landing page preview`} loading="lazy" />
+                            </div>
+                        </Motion.a>
+                    ))}
                 </div>
             </div>
         </section>
@@ -545,6 +713,7 @@ export function Home() {
             <FeatureGrid />
             <SyncBand />
             <TechnicalDocs />
+            <GovernmentShowcase />
             <SearchChapter />
             <Integrations />
             <BrandedDocs />

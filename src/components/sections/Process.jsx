@@ -21,8 +21,8 @@ const steps = [
 
 export function ProcessSection() {
     return (
-        <section className="pt-24 md:pt-32 pb-20 bg-background relative overflow-hidden">
-            <div className="absolute -left-20 top-10 w-80 h-80 rounded-full bg-primary/5 blur-3xl" />
+        <section className="ambient-light-section ambient-process pt-24 md:pt-32 pb-20 relative overflow-hidden">
+            <div className="section-ambient-orb section-ambient-orb-left" />
 
             <div className="container mx-auto px-6 md:px-12 relative z-10">
                 <Motion.div

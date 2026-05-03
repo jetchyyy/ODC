@@ -9,8 +9,8 @@ const stats = [
 
 export function AboutSection() {
     return (
-        <section id="about" className="pt-24 md:pt-32 pb-20 bg-background relative overflow-hidden">
-            <div className="absolute -top-32 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        <section id="about" className="ambient-light-section ambient-about pt-24 md:pt-32 pb-20 relative overflow-hidden">
+            <div className="section-ambient-orb section-ambient-orb-left" />
 
             <div className="container mx-auto px-6 md:px-12 relative z-10">
                 <div className="grid lg:grid-cols-2 gap-16 items-center">
