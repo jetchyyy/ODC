@@ -1,21 +1,21 @@
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 
 const steps = [
     {
         title: 'Discovery',
         description: 'We clarify your goals, customers, and constraints so every technical decision maps to real business impact.',
-        image: '/process-discovery.jpg',
+        image: '/thepicklepointcebu.jpg',
     },
     {
         title: 'Strategy',
         description: 'We map scope, timeline, and success metrics into a practical plan your team can execute with confidence.',
-        image: '/process-strategy.jpg',
+        image: '/MediQuick.png',
     },
     {
         title: 'Delivery',
         description: 'We ship in focused iterations with transparent updates, QA checkpoints, and post-launch support for your team.',
-        image: '/process-delivery.jpg',
+        image: '/grit.jpg',
     },
 ];
 
@@ -25,7 +25,7 @@ export function ProcessSection() {
             <div className="absolute -left-20 top-10 w-80 h-80 rounded-full bg-primary/5 blur-3xl" />
 
             <div className="container mx-auto px-6 md:px-12 relative z-10">
-                <motion.div
+                <Motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
@@ -38,12 +38,12 @@ export function ProcessSection() {
                     <p className="text-muted-foreground max-w-2xl mx-auto text-lg leading-relaxed">
                         A predictable process keeps clinic, retail, and service projects focused, on schedule, and aligned with measurable outcomes.
                     </p>
-                </motion.div>
+                </Motion.div>
 
                 <div className="flex flex-col md:flex-row items-stretch gap-3 md:gap-0">
                     {steps.map((step, index) => (
                         <div key={step.title} className="flex flex-col md:flex-row items-stretch flex-1">
-                            <motion.div
+                            <Motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
@@ -57,7 +57,7 @@ export function ProcessSection() {
                                         alt={step.title}
                                         className="w-full h-40 object-cover"
                                         onError={(event) => {
-                                            event.currentTarget.src = '/her-bg.png';
+                                            event.currentTarget.src = '/odysseyfamilyclinic.jpg';
                                         }}
                                     />
                                     <div className="absolute inset-0 bg-linear-to-t from-navy-950/55 via-navy-950/10 to-transparent" />
@@ -73,7 +73,7 @@ export function ProcessSection() {
                                 <div className="p-5">
                                     <p className="text-muted-foreground text-sm leading-relaxed">{step.description}</p>
                                 </div>
-                            </motion.div>
+                            </Motion.div>
 
                             {/* Connector arrow between steps — visible on md+ only */}
                             {index < steps.length - 1 && (
@@ -88,4 +88,5 @@ export function ProcessSection() {
         </section>
     );
 }
+
 

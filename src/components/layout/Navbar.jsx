@@ -1,8 +1,6 @@
-// Link import removed
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
-import { Button } from '../ui/button';
 import { cn } from '../../utils/cn';
 
 export function Navbar() {
@@ -17,33 +15,33 @@ export function Navbar() {
 
     const navLinks = [
         { name: 'Home', path: '/' },
-        { name: 'About', path: '/#about' },
-        { name: 'Services', path: '/#services' },
+        { name: 'Systems', path: '/#technical-docs' },
+        { name: 'Stack', path: '/#integrations' },
         { name: 'Portfolio', path: '/portfolio' },
         { name: 'Contact', path: '/contact' },
     ];
 
     return (
-        <motion.div
+        <Motion.div
             className="fixed top-0 left-0 right-0 z-50 px-4 pt-4"
             initial={{ y: -100 }}
             animate={{ y: 0 }}
             transition={{ duration: 0.5 }}
         >
-            <nav className={cn(
-                'mx-auto max-w-5xl transition-all duration-300',
-                scrolled
-                    ? 'bg-white/85 backdrop-blur-md border border-border/60 rounded-full shadow-lg px-6 py-3'
-                    : 'bg-navy-950/35 backdrop-blur-sm border border-white/15 rounded-full px-6 py-3'
-            )}>
+            <nav
+                className={cn(
+                    'mx-auto max-w-5xl rounded-full border px-5 py-2.5 transition-all duration-300 backdrop-blur-xl',
+                    scrolled
+                        ? 'border-white/12 bg-[#101718]/82 shadow-2xl shadow-black/20'
+                        : 'border-white/10 bg-[#101718]/38'
+                )}
+            >
                 <div className="flex items-center justify-between">
                     <a
                         href="#home"
-                        className={cn(
-                            'text-2xl font-display font-bold tracking-tight transition-colors',
-                            scrolled ? 'text-foreground' : 'text-white'
-                        )}
+                        className="inline-flex items-center gap-2 text-sm font-display font-black tracking-[-0.04em] text-white transition-colors"
                     >
+                        <span className="grid h-5 w-5 place-items-center rounded-full border border-white/15 text-[9px]">OD</span>
                         ODC
                     </a>
 
@@ -53,12 +51,7 @@ export function Navbar() {
                             <a
                                 key={link.name}
                                 href={link.path}
-                                className={cn(
-                                    'text-sm font-medium transition-colors',
-                                    scrolled
-                                        ? 'text-foreground/70 hover:text-primary'
-                                        : 'text-white/80 hover:text-primary'
-                                )}
+                                className="text-xs font-semibold text-white/58 transition-colors hover:text-white"
                             >
                                 {link.name}
                             </a>
@@ -66,14 +59,17 @@ export function Navbar() {
                     </div>
 
                     <div className="hidden md:flex">
-                        <a href="/contact">
-                            <Button size="sm" variant="primary" className="rounded-full px-6">Get Started</Button>
+                        <a
+                            href="/contact"
+                            className="rounded-full bg-white px-4 py-2 text-xs font-black text-[#101718] transition-transform duration-300 hover:-translate-y-0.5"
+                        >
+                            Book a call
                         </a>
                     </div>
 
                     {/* Mobile Toggle */}
                     <button
-                        className={cn('md:hidden p-1 transition-colors', scrolled ? 'text-foreground' : 'text-white')}
+                        className="p-1 text-white transition-colors md:hidden"
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                         aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
                         aria-expanded={mobileMenuOpen}
@@ -86,30 +82,34 @@ export function Navbar() {
             {/* Mobile Menu */}
             <AnimatePresence>
                 {mobileMenuOpen && (
-                    <motion.div
+                    <Motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="mx-auto max-w-5xl mt-2 bg-white/90 backdrop-blur-md rounded-2xl border border-border/60 shadow-lg overflow-hidden"
+                        className="mx-auto mt-2 max-w-5xl overflow-hidden rounded-2xl border border-white/10 bg-[#101718]/95 shadow-lg backdrop-blur-xl"
                     >
                         <div className="flex flex-col p-4 gap-1">
                             {navLinks.map((link) => (
                                 <a
                                     key={link.name}
                                     href={link.path}
-                                    className="text-foreground hover:text-primary py-2.5 px-4 rounded-xl hover:bg-secondary/50 transition-colors block font-medium"
+                                    className="block rounded-xl px-4 py-2.5 font-medium text-white/72 transition-colors hover:bg-white/6 hover:text-white"
                                     onClick={() => setMobileMenuOpen(false)}
                                 >
                                     {link.name}
                                 </a>
                             ))}
-                            <a href="/contact" onClick={() => setMobileMenuOpen(false)} className="mt-2">
-                                <Button className="w-full rounded-full">Get Started</Button>
+                            <a
+                                href="/contact"
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="mt-2 rounded-full bg-white px-4 py-2.5 text-center text-sm font-black text-[#101718]"
+                            >
+                                Book a call
                             </a>
                         </div>
-                    </motion.div>
+                    </Motion.div>
                 )}
             </AnimatePresence>
-        </motion.div>
+        </Motion.div>
     );
 }

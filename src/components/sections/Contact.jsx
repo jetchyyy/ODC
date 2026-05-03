@@ -1,4 +1,5 @@
-npm rimport { motion } from 'framer-motion';
+import { createElement } from 'react';
+import { motion as Motion } from 'framer-motion';
 import { Button } from '../ui/button';
 import { Mail, Phone, MapPin, Send, Facebook, Linkedin, Instagram } from 'lucide-react';
 
@@ -21,7 +22,7 @@ export function ContactSection() {
             <div className="absolute bottom-0 left-0 w-80 h-80 bg-primary/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4" />
 
             <div className="container mx-auto px-6 md:px-12 relative z-10">
-                <motion.div
+                <Motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
@@ -35,12 +36,12 @@ export function ContactSection() {
                         Have a clinic, retail, or service project in mind? Share your goal in a few lines and our team will reach out with clear next steps.
                     </p>
                     <p className="text-primary/90 text-sm font-semibold tracking-wide mt-3">Average response time: within 24 hours</p>
-                </motion.div>
+                </Motion.div>
 
                 <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-start max-w-5xl mx-auto">
 
                     {/* Info Side */}
-                    <motion.div
+                    <Motion.div
                         initial={{ opacity: 0, x: -20 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
@@ -75,7 +76,7 @@ export function ContactSection() {
                                         aria-label={`Visit ODC on ${label}`}
                                         className="w-11 h-11 rounded-xl bg-white/10 hover:bg-primary text-white transition-all duration-300 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary/50"
                                     >
-                                        <Icon className="w-5 h-5" />
+                                        {createElement(Icon, { className: 'w-5 h-5' })}
                                     </a>
                                 ))}
                             </div>
@@ -96,10 +97,10 @@ export function ContactSection() {
                                 ))}
                             </div>
                         </div>
-                    </motion.div>
+                    </Motion.div>
 
                     {/* Form Side */}
-                    <motion.div
+                    <Motion.div
                         initial={{ opacity: 0, x: 20 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
@@ -161,7 +162,7 @@ export function ContactSection() {
                                 </Button>
                             </div>
                         </form>
-                    </motion.div>
+                    </Motion.div>
 
                 </div>
             </div>

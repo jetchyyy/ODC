@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { CheckCircle2, Users, Award, Clock } from 'lucide-react';
 
 const stats = [
@@ -14,7 +14,7 @@ export function AboutSection() {
 
             <div className="container mx-auto px-6 md:px-12 relative z-10">
                 <div className="grid lg:grid-cols-2 gap-16 items-center">
-                    <motion.div
+                    <Motion.div
                         initial={{ opacity: 0, x: -50 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
@@ -22,14 +22,14 @@ export function AboutSection() {
                     >
                         <div className="relative z-10 rounded-2xl overflow-hidden border border-border/30 shadow-xl">
                             <img
-                                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                                alt="Team working together"
+                                src="/odysseyfamilyclinic.jpg"
+                                alt="ODC clinic management system project preview"
                                 className="w-full h-auto hover:scale-105 transition-transform duration-700"
                             />
                         </div>
 
                         {/* Floating stats card */}
-                        <motion.div
+                        <Motion.div
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
@@ -45,10 +45,10 @@ export function AboutSection() {
                                     <div className="text-xs text-muted-foreground mt-0.5 leading-tight">{stat.label}</div>
                                 </div>
                             ))}
-                        </motion.div>
-                    </motion.div>
+                        </Motion.div>
+                    </Motion.div>
 
-                    <motion.div
+                    <Motion.div
                         initial={{ opacity: 0, x: 50 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
@@ -63,7 +63,7 @@ export function AboutSection() {
 
                         <div className="space-y-3">
                             {['Expert Team of Developers & Designers', 'Agile Development Methodology', '24/7 Support & Maintenance', 'Scalable & Secure Solutions'].map((item, index) => (
-                                <motion.div
+                                <Motion.div
                                     key={index}
                                     initial={{ opacity: 0, x: 20 }}
                                     whileInView={{ opacity: 1, x: 0 }}
@@ -75,12 +75,13 @@ export function AboutSection() {
                                         <CheckCircle2 className="w-4 h-4 text-primary" />
                                     </div>
                                     <span className="font-medium text-foreground/90">{item}</span>
-                                </motion.div>
+                                </Motion.div>
                             ))}
                         </div>
-                    </motion.div>
+                    </Motion.div>
                 </div>
             </div>
         </section>
     );
 }
+

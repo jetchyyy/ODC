@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { Star } from 'lucide-react';
 
 const testimonials = [
@@ -6,19 +6,19 @@ const testimonials = [
         quote: 'ODC helped us move from scattered tools to one reliable platform. Our front desk and operations team now handles requests much faster.',
         name: 'Angela P.',
         role: 'Operations Manager, Clinic',
-        avatar: '/images/home/testimonial-angela.jpg',
+        avatar: '/odysseyfamilyclinic.jpg',
     },
     {
         quote: 'Their team did not just build features. They solved business bottlenecks and improved our website conversion quality.',
         name: 'Marco T.',
         role: 'Marketing Lead, Retail Brand',
-        avatar: '/images/home/testimonial-marco.jpg',
+        avatar: '/ngosiokmarketing.jpg',
     },
     {
         quote: 'Communication was clear from day one. We launched on schedule and quickly saw stronger customer retention.',
         name: 'Jessa L.',
         role: 'Founder, Subscription Startup',
-        avatar: '/images/home/testimonial-jessa.jpg',
+        avatar: '/thepicklepointcebu.jpg',
     },
 ];
 
@@ -26,7 +26,7 @@ export function TestimonialsSection() {
     return (
         <section className="pt-24 md:pt-32 pb-20 bg-secondary/35 relative overflow-hidden">
             <div className="container mx-auto px-6 md:px-12 relative z-10">
-                <motion.div
+                <Motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
@@ -39,11 +39,11 @@ export function TestimonialsSection() {
                     <p className="text-muted-foreground max-w-2xl mx-auto text-lg leading-relaxed">
                         Feedback from clinics, service companies, and growth-stage brands that partnered with us on product and operations challenges.
                     </p>
-                </motion.div>
+                </Motion.div>
 
                 <div className="grid md:grid-cols-3 gap-6">
                     {testimonials.map((item, index) => (
-                        <motion.article
+                        <Motion.article
                             key={item.name}
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
@@ -87,11 +87,12 @@ export function TestimonialsSection() {
                                     <p className="text-xs text-muted-foreground mt-0.5">{item.role}</p>
                                 </div>
                             </div>
-                        </motion.article>
+                        </Motion.article>
                     ))}
                 </div>
             </div>
         </section>
     );
 }
+
 

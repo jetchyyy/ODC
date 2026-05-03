@@ -4,56 +4,64 @@ import { Button } from '../ui/button';
 import { X } from 'lucide-react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
-const categories = ['All', 'Web', 'Mobile'];
+const categories = ['All', 'Systems', 'Portfolio', 'UI/UX'];
 
 const projects = [
     {
         id: 1,
         title: 'Odyssey Family Clinic',
-        category: 'Web',
-        image: './odysseyfamilyclinic.jpg',
-        description: 'Comprehensive patient management, appointment scheduling, and electronic health records.',
-        impact: '40% faster booking flow'
+        category: 'Systems',
+        image: '/odysseyfamilyclinic.jpg',
+        description: 'Integrated clinic management system for patient records, appointments, and clinic operations.',
+        impact: 'Clinic workflow system'
     },
     {
         id: 2,
         title: 'MediQuick',
-        category: 'Mobile',
-        image: './MediQuick.png',
-        description: 'Training plans, diet tracking, and progress analytics for gym members.',
-        impact: '2.1x weekly active users'
+        category: 'UI/UX',
+        image: '/MediQuick.png',
+        description: 'Web app UI/UX design for medicine e-commerce and inventory management.',
+        impact: 'Medicine commerce UI'
     },
     {
         id: 3,
-        title: 'International Marketing Services',
-        category: 'Web',
-        image: './imsus.png',
-        description: 'Multi-vendor appointment system with calendar sync and automated reminders.',
-        impact: '35% reduction in no-shows'
+        title: 'IMS-US',
+        category: 'Portfolio',
+        image: '/imsus.png',
+        description: 'Professional portfolio website for International Marketing Services.',
+        impact: 'Professional web presence'
     },
     {
         id: 4,
         title: 'Ngosiok Marketing',
-        category: 'Web',
-        image: './ngosiokmarketing.jpg',
-        description: 'Staff management, inventory control, and billing systems for hospitals.',
-        impact: '28% less admin overhead'
+        category: 'Portfolio',
+        image: '/ngosiokmarketing.jpg',
+        description: 'Corporate portfolio website for Ngosiok Marketing.',
+        impact: 'Corporate portfolio'
     },
     {
         id: 5,
         title: 'Firsel Tattoo',
-        category: 'Web',
-        image: './firseltattoo.png',
-        description: 'Member check-in, class scheduling, and subscription management.',
-        impact: '52% more online bookings'
+        category: 'Portfolio',
+        image: '/firseltattoo.png',
+        description: 'Specialized tattoo artist portfolio website designed to showcase work and booking intent.',
+        impact: 'Artist portfolio'
     },
     {
         id: 6,
         title: 'The Pickle Point Cebu',
-        category: 'Web',
-        image: './thepicklepointcebu.jpg',
-        description: 'Ticket sales, seat selection, and real-time availability for events.',
-        impact: '3x faster checkout'
+        category: 'Systems',
+        image: '/thepicklepointcebu.jpg',
+        description: 'Pickleball court booking system for reservations, scheduling, and court operations.',
+        impact: 'Court booking system'
+    },
+    {
+        id: 7,
+        title: 'GRIT',
+        category: 'Systems',
+        image: '/grit.jpg',
+        description: 'Comprehensive gym management system for operations, member workflows, and admin oversight.',
+        impact: 'Gym management system'
     },
 ];
 
@@ -126,7 +134,7 @@ export function PortfolioSection() {
                     <span className="text-xs font-semibold text-primary uppercase tracking-widest mb-3 block">Selected Works</span>
                     <h2 className="text-3xl md:text-5xl font-bold mb-5 tracking-tight">Showcase of <span className="text-primary">Digital Excellence</span></h2>
                     <p className="text-muted-foreground max-w-xl mx-auto text-lg leading-relaxed mb-10">
-                        Real projects with measurable business impact, built for scale, performance, and long-term growth.
+                        Real ODC projects across business systems, portfolio websites, UI/UX design, and workflow automation.
                     </p>
 
                     <div className="flex flex-wrap gap-2 justify-center">
@@ -198,7 +206,7 @@ export function PortfolioSection() {
                     >
                         <div className="text-center mb-8 rounded-2xl border border-primary/20 bg-primary/5 p-6">
                             <h3 className="text-xl md:text-2xl font-bold tracking-tight mb-2">Want results like these for your business?</h3>
-                            <p className="text-muted-foreground mb-4">Tell us your clinic, retail, or service goals and we will propose a practical roadmap in one strategy call.</p>
+                            <p className="text-muted-foreground mb-4">Tell us the manual workflow you want to automate and we will map a practical system roadmap.</p>
                             <a href="#contact">
                                 <Button className="rounded-full px-7">Book a Strategy Call</Button>
                             </a>
