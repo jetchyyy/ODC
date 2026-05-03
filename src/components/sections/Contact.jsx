@@ -1,6 +1,6 @@
 import { createElement } from 'react';
 import { motion as Motion } from 'framer-motion';
-import { Button } from '../ui/button';
+import { Button } from '../ui/Button';
 import { Mail, Phone, MapPin, Send, Facebook, Linkedin, Instagram } from 'lucide-react';
 
 const socialLinks = [

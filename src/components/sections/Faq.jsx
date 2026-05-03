@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
-import { Button } from '../ui/button';
+import { Button } from '../ui/Button';
 
 const faqs = [
     {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
-import { Button } from '../ui/button';
+import { Button } from '../ui/Button';
 import { X } from 'lucide-react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
