@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '../../utils/cn';
 
 export function Navbar() {
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const location = useLocation();
+    const navigate = useNavigate();
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -13,12 +16,44 @@ export function Navbar() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    useEffect(() => {
+        if (!location.hash) return;
+
+        const sectionId = location.hash.slice(1);
+        let attemptCount = 0;
+
+        const scrollWhenReady = () => {
+            const element = document.getElementById(sectionId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+                return;
+            }
+
+            if (attemptCount < 10) {
+                attemptCount += 1;
+                window.requestAnimationFrame(scrollWhenReady);
+            }
+        };
+
+        scrollWhenReady();
+    }, [location.hash, location.pathname]);
+
+    const scrollToSection = (sectionId) => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+            setMobileMenuOpen(false);
+            return;
+        }
+
+        setMobileMenuOpen(false);
+        navigate({ pathname: '/', hash: `#${sectionId}` });
+    };
+
     const navLinks = [
-        { name: 'Home', path: '/' },
-        { name: 'Systems', path: '/#technical-docs' },
-        { name: 'Stack', path: '/#integrations' },
-        { name: 'Portfolio', path: '/portfolio' },
-        { name: 'Contact', path: '/contact' },
+        { name: 'Home', sectionId: 'home' },
+        { name: 'Systems', sectionId: 'systems' },
+        { name: 'Civic', sectionId: 'civic' },
     ];
 
     return (
@@ -37,24 +72,26 @@ export function Navbar() {
                 )}
             >
                 <div className="flex items-center justify-between">
-                    <a
-                        href="#home"
+                    <button
+                        type="button"
+                        onClick={() => scrollToSection('home')}
                         className="inline-flex items-center gap-2 text-sm font-display font-black tracking-[-0.04em] text-white transition-colors"
                     >
                         <span className="grid h-5 w-5 place-items-center rounded-full border border-white/15 text-[9px]">OD</span>
                         ODC
-                    </a>
+                    </button>
 
                     {/* Desktop Nav */}
                     <div className="hidden md:flex items-center gap-6">
                         {navLinks.map((link) => (
-                            <a
+                            <button
+                                type="button"
                                 key={link.name}
-                                href={link.path}
-                                className="text-xs font-semibold text-white/58 transition-colors hover:text-white"
+                                onClick={() => scrollToSection(link.sectionId)}
+                                className="text-xs font-semibold text-white/58 transition-colors hover:text-white cursor-pointer bg-none border-none"
                             >
                                 {link.name}
-                            </a>
+                            </button>
                         ))}
                     </div>
 
@@ -90,14 +127,14 @@ export function Navbar() {
                     >
                         <div className="flex flex-col p-4 gap-1">
                             {navLinks.map((link) => (
-                                <a
+                                <button
+                                    type="button"
                                     key={link.name}
-                                    href={link.path}
-                                    className="block rounded-xl px-4 py-2.5 font-medium text-white/72 transition-colors hover:bg-white/6 hover:text-white"
-                                    onClick={() => setMobileMenuOpen(false)}
+                                    onClick={() => scrollToSection(link.sectionId)}
+                                    className="block rounded-xl px-4 py-2.5 font-medium text-white/72 transition-colors hover:bg-white/6 hover:text-white text-left w-full bg-none border-none"
                                 >
                                     {link.name}
-                                </a>
+                                </button>
                             ))}
                             <a
                                 href="/contact"

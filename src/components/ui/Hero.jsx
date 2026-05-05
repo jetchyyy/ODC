@@ -215,7 +215,7 @@ export function Hero() {
                 >
                     {/* Eyebrow */}
                     <motion.div variants={itemVariants} className="mb-8">
-                        <span className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-white/[0.08] bg-white/[0.03] backdrop-blur-md">
+                        <span className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-white/8 bg-white/3 backdrop-blur-md">
                             <span className="relative flex h-1.5 w-1.5">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
                                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
@@ -267,7 +267,7 @@ export function Hero() {
                             <Button
                                 size="lg"
                                 variant="outline"
-                                className="rounded-full px-7 md:px-8 border-white/[0.12] text-white/70 hover:bg-white/[0.04] hover:border-white/30 hover:text-white transition-all duration-300"
+                                className="rounded-full px-7 md:px-8 border-white/12 text-white/70 hover:bg-white/4 hover:border-white/30 hover:text-white transition-all duration-300"
                             >
                                 View Case Studies
                             </Button>
