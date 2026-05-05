@@ -1,7 +1,9 @@
-import { createElement } from 'react';
+import { createElement, useState } from 'react';
 import { motion as Motion } from 'framer-motion';
 import { Button } from '../ui/Button';
-import { Mail, Phone, MapPin, Send, Facebook, Linkedin, Instagram } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, Facebook, Linkedin, Instagram, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import { db } from '../../lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const socialLinks = [
     { Icon: Facebook, label: 'Facebook', url: 'https://facebook.com/profile.php?id=61587269647950' },
@@ -14,7 +16,49 @@ const inputClass =
 
 const labelClass = 'block text-xs font-semibold uppercase tracking-widest text-white/70 mb-1.5';
 
+const initialForm = { name: '', email: '', company: '', goal: '' };
+
 export function ContactSection() {
+    const [form, setForm] = useState(initialForm);
+    const [status, setStatus] = useState('idle'); // idle | loading | success | error
+    const [errorMsg, setErrorMsg] = useState('');
+
+    const handleChange = (e) => {
+        setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!form.name.trim() || !form.email.trim() || !form.goal.trim()) {
+            setErrorMsg('Please fill in Name, Email, and your Goal.');
+            setStatus('error');
+            return;
+        }
+
+        setStatus('loading');
+        setErrorMsg('');
+
+        try {
+            await addDoc(collection(db, 'contactSubmissions'), {
+                name: form.name.trim(),
+                email: form.email.trim(),
+                company: form.company.trim() || null,
+                goal: form.goal.trim(),
+                submittedAt: serverTimestamp(),
+                // basic metadata
+                userAgent: navigator.userAgent,
+                referrer: document.referrer || null,
+            });
+
+            setStatus('success');
+            setForm(initialForm);
+        } catch (err) {
+            console.error('Firestore error:', err);
+            setErrorMsg('Something went wrong. Please try again or email us directly.');
+            setStatus('error');
+        }
+    };
+
     return (
         <section id="contact" className="pt-24 md:pt-32 pb-20 bg-navy-900 relative overflow-hidden">
             {/* Orange accent glows */}
@@ -106,62 +150,104 @@ export function ContactSection() {
                         viewport={{ once: true }}
                         className="bg-white/5 backdrop-blur-sm p-8 md:p-10 rounded-3xl border border-white/10"
                     >
-                        <form className="space-y-5" noValidate>
-                            <div>
-                                <label htmlFor="contact-name" className={labelClass}>Full Name</label>
-                                <input
-                                    id="contact-name"
-                                    name="name"
-                                    type="text"
-                                    autoComplete="name"
-                                    className={inputClass}
-                                    placeholder="John Doe"
-                                />
+                        {status === 'success' ? (
+                            <div className="flex flex-col items-center justify-center py-12 text-center gap-4">
+                                <CheckCircle className="w-14 h-14 text-green-400" />
+                                <h3 className="text-xl font-bold text-white">Message Sent!</h3>
+                                <p className="text-white/60 text-sm max-w-xs">
+                                    Thanks for reaching out. We'll get back to you within 24 hours.
+                                </p>
+                                <button
+                                    onClick={() => setStatus('idle')}
+                                    className="mt-2 text-primary text-sm font-semibold underline underline-offset-2 hover:text-primary/80 transition-colors"
+                                >
+                                    Send another message
+                                </button>
                             </div>
+                        ) : (
+                            <form className="space-y-5" noValidate onSubmit={handleSubmit}>
+                                <div>
+                                    <label htmlFor="contact-name" className={labelClass}>Full Name</label>
+                                    <input
+                                        id="contact-name"
+                                        name="name"
+                                        type="text"
+                                        autoComplete="name"
+                                        className={inputClass}
+                                        placeholder="John Doe"
+                                        value={form.name}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
 
-                            <div>
-                                <label htmlFor="contact-email" className={labelClass}>Email Address</label>
-                                <input
-                                    id="contact-email"
-                                    name="email"
-                                    type="email"
-                                    autoComplete="email"
-                                    className={inputClass}
-                                    placeholder="john@example.com"
-                                />
-                            </div>
+                                <div>
+                                    <label htmlFor="contact-email" className={labelClass}>Email Address</label>
+                                    <input
+                                        id="contact-email"
+                                        name="email"
+                                        type="email"
+                                        autoComplete="email"
+                                        className={inputClass}
+                                        placeholder="john@example.com"
+                                        value={form.email}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
 
-                            <div>
-                                <label htmlFor="contact-company" className={labelClass}>
-                                    Company <span className="normal-case font-normal text-white/40">(Optional)</span>
-                                </label>
-                                <input
-                                    id="contact-company"
-                                    name="company"
-                                    type="text"
-                                    autoComplete="organization"
-                                    className={inputClass}
-                                    placeholder="Your company name"
-                                />
-                            </div>
+                                <div>
+                                    <label htmlFor="contact-company" className={labelClass}>
+                                        Company <span className="normal-case font-normal text-white/40">(Optional)</span>
+                                    </label>
+                                    <input
+                                        id="contact-company"
+                                        name="company"
+                                        type="text"
+                                        autoComplete="organization"
+                                        className={inputClass}
+                                        placeholder="Your company name"
+                                        value={form.company}
+                                        onChange={handleChange}
+                                    />
+                                </div>
 
-                            <div>
-                                <label htmlFor="contact-goal" className={labelClass}>What Do You Want to Achieve?</label>
-                                <textarea
-                                    id="contact-goal"
-                                    name="goal"
-                                    rows={4}
-                                    className={`${inputClass} resize-none`}
-                                    placeholder="Example: Reduce no-shows, increase qualified leads, or streamline internal operations"
-                                />
-                            </div>
+                                <div>
+                                    <label htmlFor="contact-goal" className={labelClass}>What Do You Want to Achieve?</label>
+                                    <textarea
+                                        id="contact-goal"
+                                        name="goal"
+                                        rows={4}
+                                        className={`${inputClass} resize-none`}
+                                        placeholder="Example: Reduce no-shows, increase qualified leads, or streamline internal operations"
+                                        value={form.goal}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
 
-                            <div className="pt-2">
-                                <Button className="w-full rounded-xl" size="lg">
-                                    Send Message <Send className="w-4 h-4 ml-1" />
-                                </Button>
-                            </div>
-                        </form>
+                                {status === 'error' && (
+                                    <div className="flex items-start gap-2 text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-3">
+                                        <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                                        <span>{errorMsg}</span>
+                                    </div>
+                                )}
+
+                                <div className="pt-2">
+                                    <Button className="w-full rounded-xl" size="lg" disabled={status === 'loading'} type="submit">
+                                        {status === 'loading' ? (
+                                            <>
+                                                <Loader className="w-4 h-4 mr-2 animate-spin" /> Sending…
+                                            </>
+                                        ) : (
+                                            <>
+                                                Send Message <Send className="w-4 h-4 ml-1" />
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
+                            </form>
+                        )}
                     </Motion.div>
 
                 </div>
