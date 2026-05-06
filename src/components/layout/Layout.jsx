@@ -1,12 +1,6 @@
 import { motion as Motion } from 'framer-motion';
+import { ArrowRight } from '@phosphor-icons/react';
 import { Navbar } from './Navbar';
-
-const footerGroups = [
-    ['Product', 'Systems', 'UI/UX', 'Automation'],
-    ['Company', 'About', 'Portfolio', 'Contact'],
-    ['Resources', 'Stack', 'Support', 'Roadmap'],
-    ['Social', 'GitHub', 'LinkedIn', 'Facebook'],
-];
 
 export function Layout({ children }) {
     return (
@@ -20,34 +14,29 @@ export function Layout({ children }) {
             >
                 {children}
             </Motion.main>
-            <footer className="border-t border-[#101718]/10 bg-[#e7f0ed] py-14 text-[#101718]">
-                <div className="mx-auto grid w-[min(1080px,calc(100%-2rem))] gap-10 md:grid-cols-[1.2fr_repeat(4,0.8fr)]">
+            <footer className="relative overflow-hidden border-t border-white/10 bg-[#e6f0ec] py-12 text-[#101718]">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_0%,rgba(13,119,124,0.12),transparent_24rem),radial-gradient(circle_at_86%_100%,rgba(237,194,127,0.16),transparent_22rem)]" />
+                <div className="relative mx-auto grid w-[min(1480px,calc(100%-clamp(1rem,5vw,5.5rem)))] items-end gap-8 md:grid-cols-[1fr_auto]">
                     <div>
                         <div className="mb-5 inline-flex items-center gap-2 font-display text-sm font-black tracking-[-0.04em]">
-                            <span className="grid h-5 w-5 place-items-center rounded-full border border-[#101718]/20 text-[9px]">OD</span>
-                            ODC
+                            <span className="grid h-6 w-6 place-items-center rounded-full border border-[#101718]/20 text-[9px]">OD</span>
+                            ODC IT Solutions
                         </div>
-                        <p className="max-w-64 text-xs leading-relaxed text-[#101718]/55">
-                            Build business systems, automate manual workflows, and launch polished digital products with ODC IT Solutions.
+                        <p className="max-w-xl text-sm leading-relaxed text-[#101718]/58">
+                            Business systems, automation, and polished digital products for teams ready to move beyond manual work.
                         </p>
-                        <p className="mt-10 text-[11px] text-[#101718]/42">
+                        <p className="mt-8 text-[11px] text-[#101718]/42">
                             (c) {new Date().getFullYear()} ODC IT Solutions. All rights reserved.
                         </p>
                     </div>
-                    {footerGroups.map((group) => (
-                        <div key={group[0]}>
-                            <h3 className="mb-4 text-xs font-black tracking-[-0.02em]">{group[0]}</h3>
-                            <ul className="space-y-2 text-xs text-[#101718]/52">
-                                {group.slice(1).map((item) => (
-                                    <li key={item}>
-                                        <a href="/contact" className="transition-colors hover:text-[#101718]">
-                                            {item}
-                                        </a>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    ))}
+                    <div className="flex flex-wrap items-center gap-3 md:justify-end">
+                        <a href="/contact" className="inline-flex items-center gap-3 rounded-full bg-[#101718] py-2 pl-5 pr-2 text-xs font-black text-[#edf9f5] transition-transform duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] hover:-translate-y-0.5 active:scale-[0.985]">
+                            Talk to ODC
+                            <span className="grid h-8 w-8 place-items-center rounded-full bg-white/10">
+                                <ArrowRight size={14} weight="bold" />
+                            </span>
+                        </a>
+                    </div>
                 </div>
             </footer>
         </div>
