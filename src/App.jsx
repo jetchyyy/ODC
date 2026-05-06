@@ -8,6 +8,7 @@ import { Services } from './pages/Services';
 import { Portfolio } from './pages/Portfolio';
 import { Contact } from './pages/Contact';
 import AdminPage from './pages/Admin';
+import ClientPortal from './pages/ClientPortal';
 import { SplashScreen } from './components/ui/SplashScreen';
 import { Chatbot } from './components/ui/Chatbot';
 
@@ -44,8 +45,10 @@ function PublicSite() {
 function AppRoutes() {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith('/odc');
+  const isClientPortal = location.pathname.startsWith('/portal');
 
   if (isAdmin) return <AdminPage />;
+  if (isClientPortal) return <ClientPortal />;
   return <PublicSite />;
 }
 
