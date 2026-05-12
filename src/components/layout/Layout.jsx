@@ -20,7 +20,7 @@ export function Layout({ children }) {
                     <div>
                         <div className="mb-5 inline-flex items-center gap-2 font-display text-sm font-black tracking-[-0.04em]">
                             <span className="grid h-6 w-6 place-items-center rounded-full border border-[#101718]/20 text-[9px]">OD</span>
-                            ODC IT Solutions
+                            OdysseyPH IT Solutions
                         </div>
                         <p className="max-w-xl text-sm leading-relaxed text-[#101718]/58">
                             Business systems, automation, and polished digital products for teams ready to move beyond manual work.

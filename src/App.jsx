@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Layout } from './components/layout/Layout';
 import { Home } from './pages/Home';
@@ -7,6 +7,7 @@ import { About } from './pages/About';
 import { Services } from './pages/Services';
 import { Portfolio } from './pages/Portfolio';
 import { Contact } from './pages/Contact';
+import { NotFound } from './pages/NotFound';
 import AdminPage from './pages/Admin';
 import ClientPortal from './pages/ClientPortal';
 import { SplashScreen } from './components/ui/SplashScreen';
@@ -33,6 +34,8 @@ function PublicSite() {
               <Route path="/services" element={<Services />} />
               <Route path="/portfolio" element={<Portfolio />} />
               <Route path="/contact" element={<Contact />} />
+              {/* Catch-all for undefined public routes */}
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
           <Chatbot />
@@ -43,13 +46,14 @@ function PublicSite() {
 }
 
 function AppRoutes() {
-  const location = useLocation();
-  const isAdmin = location.pathname.startsWith('/odc');
-  const isClientPortal = location.pathname.startsWith('/portal');
-
-  if (isAdmin) return <AdminPage />;
-  if (isClientPortal) return <ClientPortal />;
-  return <PublicSite />;
+  return (
+    <Routes>
+      <Route path="/odc/*" element={<AdminPage />} />
+      <Route path="/portal/*" element={<ClientPortal />} />
+      {/* All other routes go to the Public Site which handles its own 404s */}
+      <Route path="*" element={<PublicSite />} />
+    </Routes>
+  );
 }
 
 function App() {
@@ -60,4 +64,4 @@ function App() {
   );
 }
 
-export default App;
+export default App;

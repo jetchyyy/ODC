@@ -78,7 +78,7 @@ export function Navbar() {
                         className="inline-flex items-center gap-2 text-sm font-display font-black tracking-[-0.04em] text-white transition-colors"
                     >
                         <span className="grid h-5 w-5 place-items-center rounded-full border border-white/15 text-[9px]">OD</span>
-                        ODC
+                        Odyssey
                     </button>
 
                     {/* Desktop Nav */}
