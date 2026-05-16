@@ -94,6 +94,7 @@ li { margin-bottom: 5px; }
     <div class="ttl">MEMORANDUM OF AGREEMENT</div>
     <div class="freeform-body">${moa.freeformContent}</div>
     
+    ${!moa.hideFooter ? `
     <div class="sig-section no-break">
       <div class="sig-grid">
         <div class="sig-block">
@@ -106,12 +107,13 @@ li { margin-bottom: 5px; }
         <div class="sig-block">
           <div style="font-weight: bold; margin-bottom: 50px;">PARTY B (SERVICE PROVIDER):</div>
           <div class="sig-name">${moa.providerName || CO.serviceProviderName}</div>
-          <div class="sig-title">${CO.serviceProviderBusiness}</div>
+          <div class="sig-title">${moa.providerBusiness || CO.serviceProviderBusiness}</div>
           <div class="sig-title">Signature: __________________________</div>
           <div class="sig-date">Date: ${fmtDateLong(moa.date || today())}</div>
         </div>
       </div>
     </div>
+    ` : ''}
   ` : `
   <div class="ttl">MEMORANDUM OF AGREEMENT</div>
 
@@ -131,7 +133,7 @@ li { margin-bottom: 5px; }
   <div class="party-block">
     <div>PARTY B (SERVICE PROVIDER):</div>
     <div>Name: ${moa.providerName || CO.serviceProviderName}</div>
-    <div>Business Name: ${CO.serviceProviderBusiness}</div>
+    <div>Business Name: ${moa.providerBusiness || CO.serviceProviderBusiness}</div>
     <div>Address: ${CO.address}</div>
   </div>
 
@@ -234,6 +236,7 @@ li { margin-bottom: 5px; }
 
   <hr style="border: 0; border-top: 1px solid #ccc; margin: 30px 0;">
 
+  ${!moa.hideFooter ? `
   <div class="sig-section no-break">
     <h3>11. SIGNATURES</h3>
     <div class="sig-intro">
@@ -253,12 +256,13 @@ li { margin-bottom: 5px; }
       <div class="sig-block">
         <div style="font-weight: bold; margin-bottom: 50px;">PARTY B (SERVICE PROVIDER):</div>
         <div class="sig-name">${moa.providerName || CO.serviceProviderName}</div>
-        <div class="sig-title">${CO.serviceProviderBusiness}</div>
+        <div class="sig-title">${moa.providerBusiness || CO.serviceProviderBusiness}</div>
         <div class="sig-title">Signature: __________________________</div>
         <div class="sig-date">Date: ${fmtDateLong(moa.date)}</div>
       </div>
     </div>
   </div>
+  ` : ''}
   `}
 
 </div>
@@ -274,6 +278,7 @@ const emptyForm = () => ({
   clientBusiness: '',
   clientAddress: '',
   providerName: CO.serviceProviderName,
+  providerBusiness: CO.serviceProviderBusiness,
   purpose: 'The purpose of this Agreement is to define the terms and conditions under which Party B shall implement specific enhancements to the existing system of Party A.',
   scope: [
     { id: 1, title: 'QR Code CMS Booking Receipt Feature', items: ['Generation of booking receipts based on booking data', 'Display of complete booking details', 'Printable receipt layout', 'Option to save/download receipt as PDF', 'Option to save/download receipt as Image'] },
@@ -303,6 +308,7 @@ const emptyForm = () => ({
     'Any amendments must be made in writing and signed by both parties'
   ],
   date: today(),
+  hideFooter: false,
 });
 
 export default function AdminMOA({ firebaseUser, isSuperAdmin }) {
@@ -316,6 +322,7 @@ export default function AdminMOA({ firebaseUser, isSuperAdmin }) {
   const [freeformText, setFreeformText] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm());
+  const [ffFooter, setFfFooter] = useState({ clientName: '', providerName: CO.serviceProviderName, providerBusiness: CO.serviceProviderBusiness, date: today(), hideFooter: false });
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async (spin = true) => {
@@ -419,10 +426,8 @@ export default function AdminMOA({ firebaseUser, isSuperAdmin }) {
     alert('Prompt copied to clipboard! Paste this into ChatGPT/Claude along with your MOA requirements, then paste the resulting JSON here.');
   };
 
-  const handleFreeformSubmit = async () => {
+  const autoExtractFfFooter = useCallback(() => {
     if (!freeformText.trim()) return;
-    setSaving(true);
-    
     const extract = (regex) => (freeformText.match(regex)?.[1] || '').trim().replace(/\*|_/g, '');
     let cName = extract(/Client Name:?\s*([^\n]+)/i) || extract(/Name:?\s*([^\n]+)/i);
     let cBusiness = extract(/Business Name:?\s*([^\n]+)/i) || extract(/Company:?\s*([^\n]+)/i);
@@ -433,23 +438,37 @@ export default function AdminMOA({ firebaseUser, isSuperAdmin }) {
     }
     
     if (!cName && cBusiness) cName = cBusiness;
-    if (!cName && !cBusiness) { cName = "Unknown Client"; cBusiness = "Unknown Business"; }
-    
-    const costRaw = extract(/Project Cost:?\s*(?:₱|PHP)?\s*([\d,.]+)/i) || extract(/pay (?:₱|PHP)?\s*([\d,.]+)/i);
-    const pCost = costRaw ? costRaw.replace(/,/g, '') : '0';
 
+    setFfFooter(prev => ({
+      ...prev,
+      clientName: cName || prev.clientName,
+      date: today()
+    }));
+  }, [freeformText]);
+
+  const handleFreeformSubmit = async () => {
+    if (!freeformText.trim()) return;
+    setSaving(true);
+    
     const payload = {
       isFreeform: true,
       freeformContent: freeformText,
-      clientName: cName,
-      clientBusiness: cBusiness,
-      projectCost: pCost,
-      date: today(),
-      providerName: CO.serviceProviderName,
+      clientName: ffFooter.clientName || "Unknown Client",
+      clientBusiness: ffFooter.clientName || "Unknown Business", // Use client name as business if not found
+      projectCost: '0',
+      date: ffFooter.date || today(),
+      providerName: ffFooter.providerName || CO.serviceProviderName,
+      providerBusiness: ffFooter.providerBusiness || CO.serviceProviderBusiness,
+      hideFooter: ffFooter.hideFooter,
       updatedAt: serverTimestamp(),
       createdAt: serverTimestamp(),
       createdBy: firebaseUser.email,
     };
+
+    // Try to extract cost if available in text
+    const extract = (regex) => (freeformText.match(regex)?.[1] || '').trim().replace(/\*|_/g, '');
+    const costRaw = extract(/Project Cost:?\s*(?:₱|PHP)?\s*([\d,.]+)/i) || extract(/pay (?:₱|PHP)?\s*([\d,.]+)/i);
+    if (costRaw) payload.projectCost = costRaw.replace(/,/g, '');
 
     try {
       if (editingId) {
@@ -491,6 +510,13 @@ export default function AdminMOA({ firebaseUser, isSuperAdmin }) {
   const openFreeformEdit = (moa) => {
     setEditingId(moa.id);
     setFreeformText(moa.freeformContent || '');
+    setFfFooter({
+      clientName: moa.clientName || '',
+      providerName: moa.providerName || CO.serviceProviderName,
+      providerBusiness: moa.providerBusiness || CO.serviceProviderBusiness,
+      date: moa.date || today(),
+      hideFooter: moa.hideFooter || false
+    });
     setShowFreeformModal(true);
   };
 
@@ -630,14 +656,25 @@ export default function AdminMOA({ firebaseUser, isSuperAdmin }) {
               </div>
 
               {/* Party B & General */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                <div>
-                  <label style={S.lbl}>Provider Rep Name</label>
-                  <input style={S.inp} value={form.providerName} onChange={e => setForm(f => ({ ...f, providerName: e.target.value }))} required />
+              <div style={{ background: 'rgba(255,255,255,0.02)', padding: 16, borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+                <h4 style={{ color: '#60a5fa', margin: '0 0 16px 0', fontSize: 14 }}>Party B (Provider) Details</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 12 }}>
+                  <div>
+                    <label style={S.lbl}>Provider Rep Name</label>
+                    <input style={S.inp} value={form.providerName} onChange={e => setForm(f => ({ ...f, providerName: e.target.value }))} required />
+                  </div>
+                  <div>
+                    <label style={S.lbl}>Date</label>
+                    <input type="date" style={S.inp} value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} required />
+                  </div>
                 </div>
-                <div>
-                  <label style={S.lbl}>Date</label>
-                  <input type="date" style={S.inp} value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} required />
+                <div style={{ marginBottom: 12 }}>
+                  <label style={S.lbl}>Provider Business Name</label>
+                  <input style={S.inp} value={form.providerBusiness} onChange={e => setForm(f => ({ ...f, providerBusiness: e.target.value }))} required />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <input type="checkbox" id="hideFooter" checked={form.hideFooter} onChange={e => setForm(f => ({ ...f, hideFooter: e.target.checked }))} style={{ width: 16, height: 16, cursor: 'pointer' }} />
+                  <label htmlFor="hideFooter" style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, cursor: 'pointer' }}>Hide Signature Footer</label>
                 </div>
               </div>
 
@@ -768,12 +805,46 @@ export default function AdminMOA({ firebaseUser, isSuperAdmin }) {
             </p>
             
             <textarea
-              style={{ ...S.inp, resize: 'vertical', minHeight: 350, marginBottom: 16, fontFamily: 'monospace', fontSize: 12, padding: 16, lineHeight: 1.6 }}
+              style={{ ...S.inp, resize: 'vertical', minHeight: 300, marginBottom: 20, fontFamily: 'monospace', fontSize: 12, padding: 16, lineHeight: 1.6 }}
               placeholder="Paste raw MOA text here..."
               value={freeformText}
               onChange={e => setFreeformText(e.target.value)}
               autoFocus
             />
+
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: 20, borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h4 style={{ color: '#ff9a4a', margin: 0, fontSize: 14, fontWeight: 600 }}>Footer / Signature Details</h4>
+                <button type="button" onClick={autoExtractFfFooter} style={{ ...S.btn, background: 'rgba(96,165,250,0.15)', color: '#60a5fa', fontSize: 11, padding: '4px 10px' }}>⚡ Auto-fill from text</button>
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div>
+                  <label style={S.lbl}>Client Representative (Party A)</label>
+                  <input style={{ ...S.inp, fontSize: 13 }} value={ffFooter.clientName} onChange={e => setFfFooter(prev => ({ ...prev, clientName: e.target.value }))} placeholder="e.g. JETCH MERALD S. MADAYA" />
+                </div>
+                <div>
+                  <label style={S.lbl}>Date</label>
+                  <input type="date" style={{ ...S.inp, fontSize: 13 }} value={ffFooter.date} onChange={e => setFfFooter(prev => ({ ...prev, date: e.target.value }))} />
+                </div>
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={S.lbl}>Provider Representative (Party B)</label>
+                  <input style={{ ...S.inp, fontSize: 13 }} value={ffFooter.providerName} onChange={e => setFfFooter(prev => ({ ...prev, providerName: e.target.value }))} />
+                </div>
+                <div>
+                  <label style={S.lbl}>Provider Business</label>
+                  <input style={{ ...S.inp, fontSize: 13 }} value={ffFooter.providerBusiness} onChange={e => setFfFooter(prev => ({ ...prev, providerBusiness: e.target.value }))} />
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16 }}>
+                <input type="checkbox" id="ffHideFooter" checked={ffFooter.hideFooter} onChange={e => setFfFooter(prev => ({ ...prev, hideFooter: e.target.checked }))} style={{ width: 16, height: 16, cursor: 'pointer' }} />
+                <label htmlFor="ffHideFooter" style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, cursor: 'pointer' }}>Hide Signature Footer</label>
+              </div>
+            </div>
             
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setShowFreeformModal(false)} disabled={saving} style={{ ...S.btn, flex: 1, justifyContent: 'center', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}>Cancel</button>

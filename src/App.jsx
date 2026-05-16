@@ -12,6 +12,7 @@ import AdminPage from './pages/Admin';
 import ClientPortal from './pages/ClientPortal';
 import { SplashScreen } from './components/ui/SplashScreen';
 import { Chatbot } from './components/ui/Chatbot';
+import Pricing from './pages/Pricing';
 
 function PublicSite() {
   const [isLoading, setIsLoading] = useState(true);
@@ -48,8 +49,9 @@ function PublicSite() {
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/odc/*" element={<AdminPage />} />
+      <Route path="/portal/pricing" element={<Pricing />} />
       <Route path="/portal/*" element={<ClientPortal />} />
+      <Route path="/odc/*" element={<AdminPage />} />
       {/* All other routes go to the Public Site which handles its own 404s */}
       <Route path="*" element={<PublicSite />} />
     </Routes>

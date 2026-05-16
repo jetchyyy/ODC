@@ -31,7 +31,7 @@ export function Layout({ children }) {
                     </div>
                     <div className="flex flex-wrap items-center gap-3 md:justify-end">
                         <a href="/contact" className="inline-flex items-center gap-3 rounded-full bg-[#101718] py-2 pl-5 pr-2 text-xs font-black text-[#edf9f5] transition-transform duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] hover:-translate-y-0.5 active:scale-[0.985]">
-                            Talk to ODC
+                            Talk to Odyssey
                             <span className="grid h-8 w-8 place-items-center rounded-full bg-white/10">
                                 <ArrowRight size={14} weight="bold" />
                             </span>
