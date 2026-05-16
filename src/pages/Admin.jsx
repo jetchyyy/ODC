@@ -4,6 +4,8 @@ import AdminInvoices from './AdminInvoices';
 import AdminMOA from './AdminMOA';
 import AdminTickets from './AdminTickets';
 import AdminClients from './AdminClients';
+import AdminMaintenance from './AdminMaintenance';
+import AdminInquiries from './AdminInquiries';
 import {
     signInWithEmailAndPassword,
     signOut,
@@ -37,6 +39,9 @@ import {
     FileText,
     LayoutList,
     FileSignature,
+    Hammer,
+    Settings,
+    MailSearch,
 } from 'lucide-react';
 
 /* ─── Superadmin emails (comma-separated in .env) ─── */
@@ -487,7 +492,17 @@ function AdminDashboard({ firebaseUser }) {
             {/* Tab bar */}
             <div style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(10,13,20,0.6)', backdropFilter: 'blur(10px)' }}>
                 <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', display: 'flex', gap: 4 }}>
-                    {[{ id: 'contacts', label: 'Contacts', Icon: LayoutList }, ...(superAdmin ? [{ id: 'invoices', label: 'Invoices', Icon: FileText }, { id: 'moa', label: 'MOA', Icon: FileSignature }, { id: 'tickets', label: 'Tickets', Icon: MessageSquare }, { id: 'clients', label: 'Clients', Icon: Users }] : [])].map(({ id, label, Icon }) => (
+                    {[
+                      { id: 'contacts', label: 'Contacts', Icon: LayoutList }, 
+                      ...(superAdmin ? [
+                        { id: 'invoices', label: 'Invoices', Icon: FileText }, 
+                        { id: 'moa', label: 'MOA', Icon: FileSignature }, 
+                        { id: 'tickets', label: 'Tickets', Icon: MessageSquare }, 
+                        { id: 'clients', label: 'Clients', Icon: Users },
+                        { id: 'maintenance', label: 'Maintenance', Icon: Hammer },
+                        { id: 'inquiries', label: 'Inquiries', Icon: MailSearch }
+                      ] : [])
+                    ].map(({ id, label, Icon }) => (
                         <button key={id} onClick={() => setActiveTab(id)} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '14px 16px', background: 'none', border: 'none', borderBottom: `2px solid ${activeTab === id ? '#ff6a1a' : 'transparent'}`, color: activeTab === id ? '#ff9a4a' : 'rgba(255,255,255,0.45)', fontWeight: activeTab === id ? 600 : 400, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s', marginBottom: -1 }}>
                             <Icon size={15} />{label}
                         </button>
@@ -622,6 +637,14 @@ function AdminDashboard({ firebaseUser }) {
 
                 {activeTab === 'clients' && superAdmin && (
                     <AdminClients firebaseUser={firebaseUser} isSuperAdmin={superAdmin} />
+                )}
+
+                {activeTab === 'maintenance' && superAdmin && (
+                    <AdminMaintenance firebaseUser={firebaseUser} isSuperAdmin={superAdmin} />
+                )}
+
+                {activeTab === 'inquiries' && superAdmin && (
+                    <AdminInquiries firebaseUser={firebaseUser} isSuperAdmin={superAdmin} />
                 )}
             </main>
 

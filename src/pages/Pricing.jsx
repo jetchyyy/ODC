@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { db } from '../lib/firebase';
+import { doc, getDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { 
   ShieldCheck, Check, X, AlertCircle, Clock, 
   ArrowRight, Info, Plus, Zap, Activity, 
-  MessageSquare, Settings, Shield, Globe
+  MessageSquare, Settings, Shield, Globe, RefreshCw
 } from 'lucide-react';
 
 const S = {
@@ -51,7 +53,7 @@ const S = {
   }
 };
 
-const PLANS = [
+const DEFAULT_PLANS = [
   {
     name: 'Basic Care Plan',
     price: '₱1,500',
@@ -67,10 +69,11 @@ const PLANS = [
       'Security monitoring'
     ],
     limitations: [
-      'Max 2 minor requests per month',
-      'Completion within 3–7 business days',
-      'No new features or redesigns',
-      'Hosting/domain fees excluded'
+      'Max 2 minor update requests per month',
+      'Request completion within 3–7 business days',
+      'Does NOT include new features/modules',
+      'Does NOT include redesigns or major layout changes',
+      'Hosting/domain fees excluded unless agreed'
     ]
   },
   {
@@ -90,11 +93,12 @@ const PLANS = [
       'Monthly system health checks'
     ],
     limitations: [
-      'Max 5 minor requests per month',
-      'Max 1 small feature monthly',
+      'Maximum of 5 minor requests per month',
+      'Maximum of 1 small feature enhancement monthly',
       'Completion within 2–5 business days',
       'Major features quoted separately',
-      'Third-party API costs excluded'
+      'Third-party API costs excluded',
+      'Does NOT include mobile app development'
     ]
   },
   {
@@ -102,7 +106,7 @@ const PLANS = [
     price: '₱7,500',
     period: '/month+',
     color: '#10b981',
-    desc: 'For high-traffic platforms, multi-branch ERPs, and growing businesses.',
+    desc: 'For clinics, multi-branch ERPs, and growing businesses.',
     includes: [
       'Everything in Standard Plan',
       'Priority development queue',
@@ -114,15 +118,16 @@ const PLANS = [
       'Dedicated support assistance'
     ],
     limitations: [
-      'Max 10 minor requests monthly',
-      'Max 2 moderate enhancements monthly',
+      'Maximum of 10 minor requests monthly',
+      'Maximum of 2 moderate enhancements monthly',
       'Large modules billed separately',
-      'External software/service excluded'
+      'External software/service subscriptions excluded',
+      'Major architecture changes not included'
     ]
   }
 ];
 
-const ADDONS = [
+const DEFAULT_ADDONS = [
   { service: 'Additional Minor Request', price: '₱500/request' },
   { service: 'Emergency Same-Day Support', price: '₱1,500+' },
   { service: 'Additional Monthly Backup', price: '₱500/month' },
@@ -130,8 +135,86 @@ const ADDONS = [
   { service: 'Feature Development', price: 'Subject for Quotation' },
 ];
 
+const DEFAULT_MINOR_REQS = [
+  { title: 'Text & Content', desc: 'Changing labels, descriptions, or general text content across the system.' },
+  { title: 'UI Adjustments', desc: 'Small visual tweaks, adjusting forms, and layout refinements.' },
+  { title: 'Field Additions', desc: 'Adding simple fields to existing forms or data displays.' },
+  { title: 'Reports & Data', desc: 'Small report modifications and dashboard improvements.' },
+  { title: 'Pricing & Values', desc: 'Updating product pricing, system variables, or config values.' },
+  { title: 'Speed Adjustments', desc: 'Simple automation tweaks and performance micro-optimizations.' },
+];
+
+const DEFAULT_NOT_INCLUDED = [
+  'Entire new modules', 'Mobile applications', 'AI integrations', 'Payroll systems',
+  'Accounting systems', 'Multi-company architecture', 'Large database restructuring',
+  'Third-party API integrations', 'Advanced analytics', 'Major redesigns', 'Migration to another platform'
+];
+
 export default function Pricing() {
   const navigate = useNavigate();
+  const [config, setConfig] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Request Modal State
+  const [showModal, setShowModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [form, setForm] = useState({ name: '', email: '', company: '', message: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'maintenanceSettings', 'config'));
+        if (snap.exists()) {
+          setConfig(snap.data());
+        }
+      } catch (e) { console.error(e); }
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  const plans = config?.plans || DEFAULT_PLANS;
+  const addons = config?.addons || DEFAULT_ADDONS;
+  const minorRequests = config?.minorRequests || DEFAULT_MINOR_REQS;
+  const notIncluded = config?.notIncluded || DEFAULT_NOT_INCLUDED;
+  const supportHours = config?.supportHours || 'Available 24/7\nDedicated support team always ready.';
+  const paymentTerms = config?.paymentTerms || 'Monthly payments due as agreed. Non-refundable once service month begins.';
+
+  const handlePlanSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await addDoc(collection(db, 'serviceInquiries'), {
+        ...form,
+        planName: selectedPlan.name,
+        planPrice: selectedPlan.price,
+        type: 'Maintenance Plan Inquiry',
+        status: 'New',
+        submittedAt: serverTimestamp(),
+        userAgent: navigator.userAgent,
+        referrer: document.referrer || 'Direct'
+      });
+      setSubmitted(true);
+      setTimeout(() => {
+        setShowModal(false);
+        setSubmitted(false);
+        setForm({ name: '', email: '', company: '', message: '' });
+      }, 3000);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to submit request. Please try again or contact us directly.");
+    }
+    setSubmitting(false);
+  };
+
+  if (loading) return (
+    <div style={{ ...S.container, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <RefreshCw size={40} className="spin" color="rgba(255,255,255,0.2)" />
+      <style>{`.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
 
   return (
     <div style={S.container}>
@@ -169,7 +252,7 @@ export default function Pricing() {
 
       {/* Pricing Cards */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 32 }}>
-        {PLANS.map((plan, i) => (
+        {plans.map((plan, i) => (
           <motion.div
             key={plan.name}
             initial={{ opacity: 0, y: 30 }}
@@ -222,7 +305,7 @@ export default function Pricing() {
               </div>
             </div>
 
-            <button style={{ ...S.btn, background: plan.color, color: '#fff', marginTop: 40, boxShadow: `0 8px 24px ${plan.color}30` }}>
+            <button onClick={() => { setSelectedPlan(plan); setShowModal(true); }} style={{ ...S.btn, background: plan.color, color: '#fff', marginTop: 40, boxShadow: `0 8px 24px ${plan.color}30` }}>
               Get Started <ArrowRight size={18} />
             </button>
           </motion.div>
@@ -235,23 +318,15 @@ export default function Pricing() {
           <h2 style={{ fontSize: 32, fontWeight: 800, margin: '0 0 16px 0' }}>Definition of <span style={{ color: '#3b82f6' }}>Minor Requests</span></h2>
           <p style={{ color: 'rgba(255,255,255,0.5)', maxWidth: 600, margin: '0 auto' }}>Requests typically completed within 1–3 hours of workload.</p>
         </div>
-
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
-          {[
-            { icon: <MessageSquare size={20} />, title: 'Text & Content', desc: 'Changing labels, descriptions, or general text content across the system.' },
-            { icon: <Zap size={20} />, title: 'UI Adjustments', desc: 'Small visual tweaks, adjusting forms, and layout refinements.' },
-            { icon: <Plus size={20} />, title: 'Field Additions', desc: 'Adding simple fields to existing forms or data displays.' },
-            { icon: <Activity size={20} />, title: 'Reports & Data', desc: 'Small report modifications and dashboard improvements.' },
-            { icon: <Settings size={20} />, title: 'Pricing & Values', desc: 'Updating product pricing, system variables, or config values.' },
-            { icon: <Clock size={20} />, title: 'Speed Adjustments', desc: 'Simple automation tweaks and performance micro-optimizations.' },
-          ].map((item, i) => (
+          {minorRequests.map((item, i) => (
             <motion.div
               key={item.title}
               whileHover={{ y: -5, background: 'rgba(255,255,255,0.06)' }}
               style={{ ...S.glass, padding: 24, transition: 'all 0.2s' }}
             >
               <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(59,130,246,0.1)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-                {item.icon}
+                {i % 3 === 0 ? <MessageSquare size={20} /> : i % 3 === 1 ? <Zap size={20} /> : <Settings size={20} />}
               </div>
               <h4 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 8px 0' }}>{item.title}</h4>
               <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, lineHeight: 1.5, margin: 0 }}>{item.desc}</p>
@@ -269,11 +344,7 @@ export default function Pricing() {
           </div>
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, marginBottom: 24 }}>The following require separate quotations and are not covered by maintenance plans:</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            {[
-              'Entire new modules', 'Mobile applications', 'AI integrations', 'Payroll systems',
-              'Accounting systems', 'Multi-company architecture', 'Large database restructuring',
-              'Third-party API integrations', 'Advanced analytics', 'Major redesigns'
-            ].map(item => (
+            {notIncluded.map(item => (
               <div key={item} style={{ display: 'flex', gap: 8, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
                 <span style={{ color: '#f87171' }}>•</span> {item}
               </div>
@@ -288,7 +359,7 @@ export default function Pricing() {
             </div>
             <div>
               <h4 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px 0' }}>Support Hours</h4>
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, margin: 0 }}>Available 24/7<br />Dedicated support team always ready.</p>
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, margin: 0, whiteSpace: 'pre-wrap' }}>{supportHours}</p>
             </div>
           </div>
           
@@ -298,7 +369,7 @@ export default function Pricing() {
             </div>
             <div>
               <h4 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px 0' }}>Payment Terms</h4>
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, margin: 0 }}>Monthly payments due as agreed. Non-refundable once service month begins.</p>
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, margin: 0, whiteSpace: 'pre-wrap' }}>{paymentTerms}</p>
             </div>
           </div>
         </div>
@@ -316,8 +387,8 @@ export default function Pricing() {
               </tr>
             </thead>
             <tbody>
-              {ADDONS.map((addon, i) => (
-                <tr key={addon.service} style={{ borderBottom: i === ADDONS.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.05)' }}>
+              {addons.map((addon, i) => (
+                <tr key={addon.service} style={{ borderBottom: i === addons.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.05)' }}>
                   <td style={{ padding: '20px 32px', fontSize: 15, fontWeight: 600 }}>{addon.service}</td>
                   <td style={{ padding: '20px 32px', textAlign: 'right', fontSize: 15, color: '#3b82f6', fontWeight: 700 }}>{addon.price}</td>
                 </tr>
@@ -335,6 +406,68 @@ export default function Pricing() {
         </div>
       </section>
 
+      {/* Plan Inquiry Modal */}
+      {showModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div onClick={() => setShowModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)' }} />
+          
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            style={{ ...S.glass, background: '#0f1218', padding: 40, width: '100%', maxWidth: 500, position: 'relative', zIndex: 1 }}
+          >
+            <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: 20, right: 20, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer' }}>
+              <X size={24} />
+            </button>
+
+            {submitted ? (
+              <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                <div style={{ width: 64, height: 64, background: 'rgba(16,185,129,0.1)', color: '#10b981', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                  <Check size={32} />
+                </div>
+                <h3 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12 }}>Request Received!</h3>
+                <p style={{ color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>We've received your inquiry for the <strong>{selectedPlan.name}</strong>. Our team will contact you shortly.</p>
+              </div>
+            ) : (
+              <>
+                <div style={{ marginBottom: 32 }}>
+                  <div style={S.chip(selectedPlan.color)}>{selectedPlan.name}</div>
+                  <h3 style={{ fontSize: 24, fontWeight: 700, margin: '8px 0' }}>Get Started</h3>
+                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>Fill out the form below and we'll get back to you with the next steps.</p>
+                </div>
+
+                <form onSubmit={handlePlanSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  <div>
+                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Full Name</label>
+                    <input style={{ ...S.btn, width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'left', padding: '14px 20px', fontWeight: 400 }} value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Juan Dela Cruz" required />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Email Address</label>
+                    <input type="email" style={{ ...S.btn, width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'left', padding: '14px 20px', fontWeight: 400 }} value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="juan@example.com" required />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Company / Project Name</label>
+                    <input style={{ ...S.btn, width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'left', padding: '14px 20px', fontWeight: 400 }} value={form.company} onChange={e => setForm({...form, company: e.target.value})} placeholder="Your Business Name" required />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Message (Optional)</label>
+                    <textarea style={{ ...S.btn, width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'left', padding: '14px 20px', fontWeight: 400, minHeight: 80, resize: 'none' }} value={form.message} onChange={e => setForm({...form, message: e.target.value})} placeholder="Any specific requirements or questions?" />
+                  </div>
+
+                  <button type="submit" disabled={submitting} style={{ ...S.btn, background: selectedPlan.color, color: '#fff', marginTop: 10, fontSize: 16, height: 56 }}>
+                    {submitting ? <RefreshCw className="spin" size={20} /> : 'Submit Request'}
+                  </button>
+                </form>
+              </>
+            )}
+          </motion.div>
+        </div>
+      )}
+
+      <style>{`
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 }
