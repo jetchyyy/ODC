@@ -6,6 +6,7 @@ import AdminTickets from './AdminTickets';
 import AdminClients from './AdminClients';
 import AdminMaintenance from './AdminMaintenance';
 import AdminInquiries from './AdminInquiries';
+import { PortalLogin } from '../components/ui/PortalLogin';
 import {
     signInWithEmailAndPassword,
     signOut,
@@ -35,7 +36,6 @@ import {
     ChevronDown,
     ChevronUp,
     Download,
-    Loader,
     FileText,
     LayoutList,
     FileSignature,
@@ -122,144 +122,27 @@ function LoginScreen() {
     };
 
     return (
-        <div
-            style={{
-                minHeight: '100vh',
-                background: '#0a0d14',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: 16,
-                fontFamily: "'Inter', 'Segoe UI', sans-serif",
-            }}
-        >
-            {/* Background glow */}
-            <div style={{
-                position: 'fixed', inset: 0, pointerEvents: 'none',
-                background: 'radial-gradient(ellipse 60% 50% at 50% -10%, rgba(255,100,30,0.12), transparent)',
-            }} />
-
-            <div style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 24,
-                padding: '48px 40px',
-                width: '100%',
-                maxWidth: 420,
-                backdropFilter: 'blur(24px)',
-                boxShadow: '0 32px 80px rgba(0,0,0,0.5)',
-                position: 'relative', zIndex: 1,
-            }}>
-                {/* Logo */}
-                <div style={{ textAlign: 'center', marginBottom: 32 }}>
-                    <div style={{
-                        width: 56, height: 56,
-                        background: 'linear-gradient(135deg, #ff6a1a, #ff9a4a)',
-                        borderRadius: 16,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        margin: '0 auto 16px',
-                        boxShadow: '0 8px 24px rgba(255,106,26,0.4)',
-                    }}>
-                        <ShieldCheck size={28} color="#fff" />
-                    </div>
-                    <h1 style={{ color: '#fff', fontSize: 22, fontWeight: 700, margin: 0 }}>
-                        ODC Admin Portal
-                    </h1>
-                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: 6 }}>
-                        Sign in with your Firebase account
-                    </p>
-                </div>
-
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <div>
-                        <label style={{
-                            display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: 11,
-                            fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6,
-                        }}>Email</label>
-                        <input
-                            id="admin-email"
-                            type="email"
-                            autoComplete="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            placeholder="admin@odc.com"
-                            style={inputStyle}
-                            onFocus={(e) => (e.target.style.borderColor = 'rgba(255,106,26,0.7)')}
-                            onBlur={(e) => (e.target.style.borderColor = 'rgba(255,255,255,0.12)')}
-                        />
-                    </div>
-
-                    <div>
-                        <label style={{
-                            display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: 11,
-                            fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6,
-                        }}>Password</label>
-                        <input
-                            id="admin-password"
-                            type="password"
-                            autoComplete="current-password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            placeholder="••••••••"
-                            style={inputStyle}
-                            onFocus={(e) => (e.target.style.borderColor = 'rgba(255,106,26,0.7)')}
-                            onBlur={(e) => (e.target.style.borderColor = 'rgba(255,255,255,0.12)')}
-                        />
-                    </div>
-
-                    {error && (
-                        <div style={{
-                            background: 'rgba(239,68,68,0.1)',
-                            border: '1px solid rgba(239,68,68,0.25)',
-                            borderRadius: 10,
-                            padding: '10px 14px',
-                            color: '#f87171',
-                            fontSize: 13,
-                        }}>
-                            {error}
-                        </div>
-                    )}
-
-                    <button
-                        id="admin-login-btn"
-                        type="submit"
-                        disabled={loading}
-                        style={{
-                            marginTop: 4,
-                            padding: '13px 0',
-                            background: loading
-                                ? 'rgba(255,106,26,0.4)'
-                                : 'linear-gradient(135deg, #ff6a1a, #ff9a4a)',
-                            border: 'none',
-                            borderRadius: 12,
-                            color: '#fff',
-                            fontSize: 15,
-                            fontWeight: 600,
-                            cursor: loading ? 'not-allowed' : 'pointer',
-                            transition: 'opacity 0.2s',
-                            boxShadow: loading ? 'none' : '0 4px 16px rgba(255,106,26,0.35)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                            fontFamily: 'inherit',
-                        }}
-                    >
-                        {loading ? (
-                            <>
-                                <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                                Signing in…
-                            </>
-                        ) : 'Sign In'}
-                    </button>
-                </form>
-            </div>
-
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        </div>
+        <PortalLogin
+            variant="admin"
+            eyebrow="ODC admin"
+            title="Operations access for the team behind the builds."
+            subtitle="Review inquiries, manage client work, and keep support moving inside a calmer console."
+            sideTitle="Admin portal"
+            sideCopy="Protected Firebase sign-in for ODC internal workflows."
+            email={email}
+            password={password}
+            onEmailChange={setEmail}
+            onPasswordChange={setPassword}
+            onSubmit={handleSubmit}
+            error={error}
+            loading={loading}
+            submitLabel="Sign in"
+            loadingLabel="Signing in"
+            emailPlaceholder="admin@odc.com"
+        />
     );
 }
 
-/* ─── Submission Row ─── */
 function SubmissionRow({ sub, isSuperAdmin, onDelete }) {
     const [expanded, setExpanded] = useState(false);
     const [deleting, setDeleting] = useState(false);
