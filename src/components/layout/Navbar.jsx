@@ -54,7 +54,6 @@ export function Navbar() {
         { name: 'Home', sectionId: 'home' },
         { name: 'Systems', sectionId: 'systems' },
         { name: 'Civic', sectionId: 'civic' },
-        { name: 'Pricing', sectionId: 'pricing' },
     ];
 
     return (

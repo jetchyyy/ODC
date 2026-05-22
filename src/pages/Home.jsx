@@ -1,5 +1,4 @@
 ﻿import { motion as Motion } from 'framer-motion';
-import { PricingPlans } from '../components/sections/PricingPlans';
 import {
     ArrowRight,
     ArrowSquareOut,
@@ -461,7 +460,6 @@ export function Home() {
             <HeroSection />
             <SystemsShowcase />
             <GovernmentShowcase />
-            <PricingPlans />
             <FinalCta />
         </div>
     );
