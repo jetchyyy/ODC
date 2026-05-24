@@ -4,6 +4,7 @@ import { db, auth } from '../lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, doc, query, where, orderBy, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { Plus, X, RefreshCw, Eye, MessageSquare, Clock, Send, ShieldCheck, LogOut, ArrowLeft, ExternalLink } from 'lucide-react';
+import { PortalLogin } from '../components/ui/PortalLogin';
 
 const S = {
   card: { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '20px 24px' },
@@ -443,7 +444,7 @@ function ClientLogin() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       // onAuthStateChanged in parent will handle transition
-    } catch (err) {
+    } catch {
       setError('Invalid email or password. Please contact support if you need an account.');
     } finally {
       setLoading(false);
@@ -451,40 +452,27 @@ function ClientLogin() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0d14', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse 60% 50% at 50% -10%, rgba(59,130,246,0.15), transparent)' }} />
-      
-      <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, padding: '48px 40px', width: '100%', maxWidth: 420, backdropFilter: 'blur(24px)', boxShadow: '0 32px 80px rgba(0,0,0,0.5)', position: 'relative', zIndex: 1 }}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ width: 56, height: 56, background: 'linear-gradient(135deg, #3b82f6, #2563eb)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 8px 24px rgba(59,130,246,0.4)' }}>
-            <ShieldCheck size={28} color="#fff" />
-          </div>
-          <h1 style={{ color: '#fff', fontSize: 22, fontWeight: 700, margin: 0 }}>Client Portal</h1>
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: 6 }}>Sign in to view and manage your tickets</p>
-        </div>
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div>
-            <label style={S.lbl}>Email Address</label>
-            <input type="email" style={S.inp} value={email} onChange={e => setEmail(e.target.value)} required placeholder="client@example.com" />
-          </div>
-          <div>
-            <label style={S.lbl}>Password</label>
-            <input type="password" style={S.inp} value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" />
-          </div>
-
-          {error && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, padding: '10px 14px', color: '#f87171', fontSize: 13 }}>{error}</div>}
-
-          <button type="submit" disabled={loading} style={{ marginTop: 4, padding: '13px 0', background: loading ? 'rgba(59,130,246,0.4)' : 'linear-gradient(135deg, #3b82f6, #2563eb)', border: 'none', borderRadius: 12, color: '#fff', fontSize: 15, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', transition: 'opacity 0.2s', boxShadow: loading ? 'none' : '0 4px 16px rgba(59,130,246,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {loading ? 'Signing in…' : 'Sign In'}
-          </button>
-        </form>
-      </div>
-    </div>
+    <PortalLogin
+      variant="client"
+      eyebrow="Client portal"
+      title="Support access for systems already in motion."
+      subtitle="Sign in to review tickets, send updates, and keep implementation questions in one place."
+      sideTitle="Client workspace"
+      sideCopy="Protected access for support tickets and maintenance conversations."
+      email={email}
+      password={password}
+      onEmailChange={setEmail}
+      onPasswordChange={setPassword}
+      onSubmit={handleSubmit}
+      error={error}
+      loading={loading}
+      submitLabel="Sign in"
+      loadingLabel="Signing in"
+      emailPlaceholder="client@example.com"
+    />
   );
-}
 
-/* ─── Main Client Portal Entry ─── */
+}
 export default function ClientPortal() {
   const [firebaseUser, setFirebaseUser] = useState(undefined);
 
