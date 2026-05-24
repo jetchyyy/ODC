@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '../lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, serverTimestamp } from 'firebase/firestore';
-import { Plus, X, Trash2, Printer, Edit2, RefreshCw, CheckCircle2, Clock, Eye, CreditCard } from 'lucide-react';
+import { Plus, X, Trash2, Printer, Edit2, RefreshCw, CheckCircle2, Clock, Eye, CreditCard, DollarSign, TrendingUp, TrendingDown, FileText, ArrowDownRight, ArrowUpRight, Briefcase } from 'lucide-react';
 
 const CO = {
   address: '3409 Pearl Corner Jade St. Casals Village, Mabolo, Cebu City',
@@ -21,6 +21,15 @@ const S = {
   inp: { width: '100%', boxSizing: 'border-box', padding: '10px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, color: '#fff', fontSize: 14, outline: 'none', fontFamily: 'inherit' },
   lbl: { display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5 },
 };
+
+const EXPENSE_CATEGORIES = [
+  'Salaries',
+  'Rent & Utilities',
+  'Software & Subscriptions',
+  'Marketing & Advertising',
+  'Equipment & Supplies',
+  'Other',
+];
 
 const fmt = (n) => Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 });
 const today = () => new Date().toISOString().split('T')[0];
@@ -99,9 +108,182 @@ th{background:#f0f0f0;padding:10px 14px;font-size:11px;letter-spacing:1px;border
   w.document.close();
 }
 
+function printFinancialReport(invoices, expenses) {
+  const paidInvs = invoices.filter(i => i.status === 'paid');
+  const paidExps = expenses.filter(e => e.status === 'paid');
+  
+  const totalRevenue = paidInvs.reduce((s, i) => s + (i.total || 0), 0);
+  const totalExpenses = paidExps.reduce((s, e) => s + (e.amount || 0), 0);
+  const netProfit = totalRevenue - totalExpenses;
+  const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+  
+  // Group expenses by category
+  const catTotals = EXPENSE_CATEGORIES.reduce((acc, cat) => {
+    acc[cat] = paidExps.filter(e => e.category === cat).reduce((sum, e) => sum + (e.amount || 0), 0);
+    return acc;
+  }, {});
+  
+  const logoUrl = window.location.origin + '/images/odcclearlogo.png';
+  
+  // Group by month
+  const monthlyMap = {};
+  paidInvs.forEach(inv => {
+    const ym = (inv.date || '').substring(0, 7);
+    if (ym) {
+      if (!monthlyMap[ym]) monthlyMap[ym] = { revenue: 0, expenses: 0 };
+      monthlyMap[ym].revenue += (inv.total || 0);
+    }
+  });
+  paidExps.forEach(exp => {
+    const ym = (exp.date || '').substring(0, 7);
+    if (ym) {
+      if (!monthlyMap[ym]) monthlyMap[ym] = { revenue: 0, expenses: 0 };
+      monthlyMap[ym].expenses += (exp.amount || 0);
+    }
+  });
+  const monthlyRows = Object.keys(monthlyMap)
+    .sort((a, b) => b.localeCompare(a))
+    .map(ym => {
+      const [year, month] = ym.split('-');
+      const d = new Date(Number(year), Number(month) - 1, 1);
+      const monthName = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      const rev = monthlyMap[ym].revenue;
+      const exp = monthlyMap[ym].expenses;
+      const net = rev - exp;
+      return `<tr>
+        <td class="td">${monthName}</td>
+        <td class="td ar">&#8369; ${fmt(rev)}</td>
+        <td class="td ar">&#8369; ${fmt(exp)}</td>
+        <td class="td ar ${net >= 0 ? 'pos' : 'neg'}">&#8369; ${fmt(net)}</td>
+      </tr>`;
+    }).join('');
+    
+  // Category breakdown rows
+  const catRows = EXPENSE_CATEGORIES.map(cat => {
+    const amt = catTotals[cat] || 0;
+    const pct = totalExpenses > 0 ? (amt / totalExpenses) * 100 : 0;
+    return `<tr>
+      <td class="td">${cat}</td>
+      <td class="td ar">&#8369; ${fmt(amt)}</td>
+      <td class="td ar">${pct.toFixed(1)}%</td>
+    </tr>`;
+  }).join('');
+  
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Financial Statement - Odyssey Clinic</title><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,sans-serif;font-size:12px;color:#333;background:#fff}
+.pg{width:794px;min-height:1100px;padding:50px 60px;margin:0 auto}
+.hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px}
+.logo img{height:80px;width:auto;display:block}
+.ci{text-align:right;line-height:1.9;color:#555;font-size:11px}
+.ci a{color:#e85d04}
+.ttl{text-align:center;font-size:20px;font-weight:700;letter-spacing:5px;padding:10px 0;border-top:1px solid #ddd;border-bottom:1px solid #ddd;margin:20px 0}
+.section-title{font-size:14px;font-weight:700;margin:24px 0 10px;text-transform:uppercase;letter-spacing:1px;color:#222}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:28px}
+.stat-card{border:1px solid #ddd;border-radius:8px;padding:16px;text-align:center;background:#fcfcfc}
+.stat-label{font-size:10px;font-weight:700;text-transform:uppercase;color:#666;margin-bottom:6px;letter-spacing:0.5px}
+.stat-val{font-size:18px;font-weight:700;color:#111}
+.stat-val.pos{color:#0f9d58}
+.stat-val.neg{color:#d93025}
+table{width:100%;border-collapse:collapse;margin-bottom:20px}
+th{background:#f0f0f0;padding:10px 14px;font-size:11px;letter-spacing:1px;border:1px solid #ccc;text-align:center}
+.td{padding:8px 12px;border:1px solid #ccc}
+.ar{text-align:right}
+.pos{color:#0f9d58;font-weight:600}
+.neg{color:#d93025;font-weight:600}
+.sub-row td{border-top:2px solid #ccc;font-weight:600;background:#fafafa}
+.ft{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:60px;padding-top:20px;border-top:1px solid #ddd}
+.sig{border-bottom:1px solid #333;margin-top:4px}
+.sig-block{text-align:center;margin-top:32px;margin-bottom:2px}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body>
+<div class="pg">
+  <div class="hd">
+    <div class="logo"><img src="${logoUrl}" alt="ODC" /></div>
+    <div class="ci">${CO.address}<br><a href="mailto:${CO.email}">${CO.email}</a><br>${CO.phone}</div>
+  </div>
+  <div class="ttl">SHAREHOLDER FINANCIAL REPORT</div>
+  <div style="margin-bottom: 24px; color:#555; text-align:center; font-size:11px">
+    Prepared on ${new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+  </div>
+  
+  <div class="grid-3">
+    <div class="stat-card">
+      <div class="stat-label">Total Paid Revenue</div>
+      <div class="stat-val pos">&#8369; ${fmt(totalRevenue)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Paid Expenses</div>
+      <div class="stat-val neg">&#8369; ${fmt(totalExpenses)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Net Profit (Margin)</div>
+      <div class="stat-val ${netProfit >= 0 ? 'pos' : 'neg'}">&#8369; ${fmt(netProfit)} (${profitMargin.toFixed(1)}%)</div>
+    </div>
+  </div>
+
+  <div class="section-title">Monthly Operating Performance</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:40%">MONTH</th>
+        <th style="width:20%">REVENUE</th>
+        <th style="width:20%">EXPENSES</th>
+        <th style="width:20%">NET PROFIT</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${monthlyRows || '<tr><td colspan="4" class="td" style="text-align:center">No monthly transactional data available.</td></tr>'}
+    </tbody>
+    <tfoot>
+      <tr class="sub-row">
+        <td class="td">Total</td>
+        <td class="td ar">&#8369; ${fmt(totalRevenue)}</td>
+        <td class="td ar">&#8369; ${fmt(totalExpenses)}</td>
+        <td class="td ar ${netProfit >= 0 ? 'pos' : 'neg'}">&#8369; ${fmt(netProfit)}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="section-title">Expense Breakdown by Category</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:50%">CATEGORY</th>
+        <th style="width:30%">TOTAL AMOUNT</th>
+        <th style="width:20%">PERCENTAGE</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${catRows}
+    </tbody>
+    <tfoot>
+      <tr class="sub-row">
+        <td class="td">Total Expenses</td>
+        <td class="td ar">&#8369; ${fmt(totalExpenses)}</td>
+        <td class="td ar">100.0%</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="ft">
+    <div><b>Prepared By:</b><br><div class="sig-block">${CO.preparedBy}</div><div class="sig"></div></div>
+    <div><b>Approved By:</b><br><div class="sig-block">${CO.approvedBy}</div><div class="sig"></div></div>
+  </div>
+</div>
+<script>window.onload=function(){window.print()}</script>
+</body></html>`;
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+}
+
 const emptyForm = () => ({ billTo: '', project: '', date: today(), paymentTerms: 'Cash/Bank Transfer', items: [{ id: 1, service: '', amount: '' }], notes: '', qrCodes: ['gotyme', 'maribank'], preparedBy: CO.preparedBy });
 
+const emptyExpenseForm = () => ({ title: '', category: 'Salaries', amount: '', date: today(), payee: '', referenceNumber: '', status: 'paid', notes: '' });
+
 export default function AdminInvoices({ firebaseUser, isSuperAdmin }) {
+  // Invoices State
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -109,19 +291,41 @@ export default function AdminInvoices({ firebaseUser, isSuperAdmin }) {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
+  const [payModal, setPayModal] = useState(null); // { inv }
+  const [payMethod, setPayMethod] = useState('');
+  const [payRef, setPayRef] = useState('');
+  const [payConfirming, setPayConfirming] = useState(false);
+  const [viewInv, setViewInv] = useState(null);
 
+  // Expenses State
+  const [expenses, setExpenses] = useState([]);
+  const [expensesLoading, setExpensesLoading] = useState(true);
+  const [showExpenseSidebar, setShowExpenseSidebar] = useState(false);
+  const [expenseEditingId, setExpenseEditingId] = useState(null);
+  const [expenseForm, setExpenseForm] = useState(emptyExpenseForm());
+  const [savingExpense, setSavingExpense] = useState(false);
+
+  // Sub-Navigation State
+  const [activeSubTab, setActiveSubTab] = useState('invoices'); // 'invoices' | 'expenses' | 'summary'
+
+  // Load Invoices and Expenses
   const load = useCallback(async (spin = true) => {
     if (spin) setRefreshing(true);
     try {
-      const snap = await getDocs(query(collection(db, 'invoices'), orderBy('createdAt', 'desc')));
-      setInvoices(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const snapInvoices = await getDocs(query(collection(db, 'invoices'), orderBy('createdAt', 'desc')));
+      setInvoices(snapInvoices.docs.map(d => ({ id: d.id, ...d.data() })));
+      
+      const snapExpenses = await getDocs(query(collection(db, 'expenses'), orderBy('createdAt', 'desc')));
+      setExpenses(snapExpenses.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (e) { console.error(e); }
     setLoading(false);
+    setExpensesLoading(false);
     setRefreshing(false);
   }, []);
 
   useEffect(() => { load(false); }, [load]);
 
+  // Invoice Items Management
   const addItem = () => setForm(f => ({ ...f, items: [...f.items, { id: Date.now(), service: '', amount: '' }] }));
   const removeItem = (id) => setForm(f => ({ ...f, items: f.items.filter(i => i.id !== id) }));
   const updItem = (id, k, v) => setForm(f => ({ ...f, items: f.items.map(i => i.id === id ? { ...i, [k]: v } : i) }));
@@ -154,12 +358,6 @@ export default function AdminInvoices({ firebaseUser, isSuperAdmin }) {
     setSaving(false);
   };
 
-  const [payModal, setPayModal] = useState(null); // { inv }
-  const [payMethod, setPayMethod] = useState('');
-  const [payRef, setPayRef] = useState('');
-  const [payConfirming, setPayConfirming] = useState(false);
-  const [viewInv, setViewInv] = useState(null);
-
   const openPayModal = (inv) => { setPayModal({ inv }); setPayMethod(''); setPayRef(''); };
 
   const confirmPayment = async () => {
@@ -179,99 +377,447 @@ export default function AdminInvoices({ firebaseUser, isSuperAdmin }) {
     setInvoices(prev => prev.filter(i => i.id !== inv.id));
   };
 
+  // Expenses CRUD handlers
+  const openCreateExpense = () => { setExpenseEditingId(null); setExpenseForm(emptyExpenseForm()); setShowExpenseSidebar(true); };
+  const openEditExpense = (exp) => {
+    setExpenseEditingId(exp.id);
+    setExpenseForm({
+      title: exp.title || '',
+      category: exp.category || 'Salaries',
+      amount: exp.amount || '',
+      date: exp.date || today(),
+      payee: exp.payee || '',
+      referenceNumber: exp.referenceNumber || '',
+      status: exp.status || 'paid',
+      notes: exp.notes || '',
+    });
+    setShowExpenseSidebar(true);
+  };
+
+  const handleSubmitExpense = async (e) => {
+    e.preventDefault();
+    setSavingExpense(true);
+    const payload = {
+      ...expenseForm,
+      amount: Number(expenseForm.amount || 0),
+      updatedAt: serverTimestamp(),
+    };
+    try {
+      if (expenseEditingId) {
+        await updateDoc(doc(db, 'expenses', expenseEditingId), payload);
+      } else {
+        await addDoc(collection(db, 'expenses'), {
+          ...payload,
+          createdAt: serverTimestamp(),
+          createdBy: firebaseUser.email,
+        });
+      }
+      setShowExpenseSidebar(false);
+      load();
+    } catch (err) { console.error(err); }
+    setSavingExpense(false);
+  };
+
+  const handleDeleteExpense = async (exp) => {
+    if (!window.confirm(`Delete expense "${exp.title}"?`)) return;
+    await deleteDoc(doc(db, 'expenses', exp.id));
+    setExpenses(prev => prev.filter(e => e.id !== exp.id));
+  };
+
+  // Pre-calculations
   const paid = invoices.filter(i => i.status === 'paid');
   const unpaid = invoices.filter(i => i.status !== 'paid');
   const revenue = paid.reduce((s, i) => s + (i.total || 0), 0);
 
+  const paidExpensesList = expenses.filter(e => e.status === 'paid');
+  const pendingExpensesList = expenses.filter(e => e.status !== 'paid');
+  const totalExpensesAmount = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+  const paidExpensesAmount = paidExpensesList.reduce((s, e) => s + (e.amount || 0), 0);
+  const pendingExpensesAmount = pendingExpensesList.reduce((s, e) => s + (e.amount || 0), 0);
+
+  // Group monthly performance data
+  const getMonthlyData = () => {
+    const monthly = {};
+    const getYearMonth = (dateStr) => (dateStr || '').substring(0, 7);
+    
+    paid.forEach(inv => {
+      const ym = getYearMonth(inv.date);
+      if (!ym) return;
+      if (!monthly[ym]) monthly[ym] = { revenue: 0, expenses: 0 };
+      monthly[ym].revenue += (inv.total || 0);
+    });
+    
+    paidExpensesList.forEach(exp => {
+      const ym = getYearMonth(exp.date);
+      if (!ym) return;
+      if (!monthly[ym]) monthly[ym] = { revenue: 0, expenses: 0 };
+      monthly[ym].expenses += (exp.amount || 0);
+    });
+    
+    return Object.keys(monthly)
+      .sort((a, b) => b.localeCompare(a))
+      .map(ym => {
+        const [year, month] = ym.split('-');
+        const d = new Date(Number(year), Number(month) - 1, 1);
+        const monthName = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        return {
+          ym,
+          monthName,
+          revenue: monthly[ym].revenue,
+          expenses: monthly[ym].expenses,
+          net: monthly[ym].revenue - monthly[ym].expenses
+        };
+      });
+  };
+
+  const monthlyData = getMonthlyData();
+
+  // Group category totals
+  const categoryTotals = EXPENSE_CATEGORIES.reduce((acc, cat) => {
+    acc[cat] = expenses.filter(e => e.category === cat).reduce((sum, e) => sum + (e.amount || 0), 0);
+    return acc;
+  }, {});
+
   return (
     <div style={{ position: 'relative' }}>
+      {/* Page Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h2 style={{ color: '#fff', fontSize: 20, fontWeight: 700, margin: 0 }}>Invoices</h2>
+        <h2 style={{ color: '#fff', fontSize: 20, fontWeight: 700, margin: 0 }}>Invoices & Finance</h2>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={() => load()} disabled={refreshing} style={{ ...S.btn, background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)' }}>
             <RefreshCw size={14} style={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }} /> Refresh
           </button>
-          {isSuperAdmin && (
+          {isSuperAdmin && activeSubTab === 'invoices' && (
             <button onClick={openCreate} style={{ ...S.btn, background: 'linear-gradient(135deg,#ff6a1a,#ff9a4a)', color: '#fff', padding: '10px 18px', boxShadow: '0 4px 14px rgba(255,106,26,0.3)' }}>
               <Plus size={16} /> New Invoice
+            </button>
+          )}
+          {isSuperAdmin && activeSubTab === 'expenses' && (
+            <button onClick={openCreateExpense} style={{ ...S.btn, background: 'linear-gradient(135deg,#ff6a1a,#ff9a4a)', color: '#fff', padding: '10px 18px', boxShadow: '0 4px 14px rgba(255,106,26,0.3)' }}>
+              <Plus size={16} /> Record Expense
+            </button>
+          )}
+          {activeSubTab === 'summary' && (
+            <button onClick={() => printFinancialReport(invoices, expenses)} style={{ ...S.btn, background: 'linear-gradient(135deg,#ff6a1a,#ff9a4a)', color: '#fff', padding: '10px 18px', boxShadow: '0 4px 14px rgba(255,106,26,0.3)' }}>
+              <Printer size={16} /> Print Shareholder Report
             </button>
           )}
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 14, marginBottom: 28 }}>
-        {[{ l: 'Total', v: invoices.length, c: '#fff' }, { l: 'Paid', v: paid.length, c: '#34d399' }, { l: 'Unpaid', v: unpaid.length, c: '#f87171' }, { l: 'Revenue', v: `₱${fmt(revenue)}`, c: '#ff9a4a' }].map(({ l, v, c }) => (
-          <div key={l} style={{ ...S.card }}>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{l}</div>
-            <div style={{ color: c, fontSize: 24, fontWeight: 700 }}>{v}</div>
-          </div>
-        ))}
+      {/* Sub-Tabs Sub-navigation */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 24, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 12 }}>
+        {[
+          { id: 'invoices', label: 'Invoices', count: invoices.length, Icon: FileText },
+          { id: 'expenses', label: 'Expenses', count: expenses.length, Icon: Briefcase },
+          { id: 'summary', label: 'Financial Summary', count: null, Icon: TrendingUp }
+        ].map(tab => {
+          const Icon = tab.Icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveSubTab(tab.id)}
+              style={{
+                cursor: 'pointer',
+                border: 'none',
+                borderRadius: 8,
+                padding: '8px 16px',
+                fontSize: 13,
+                fontFamily: 'inherit',
+                background: activeSubTab === tab.id ? 'rgba(255,106,26,0.15)' : 'transparent',
+                color: activeSubTab === tab.id ? '#ff9a4a' : 'rgba(255,255,255,0.5)',
+                fontWeight: activeSubTab === tab.id ? 600 : 400,
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              <Icon size={14} />
+              {tab.label}
+              {tab.count !== null && (
+                <span style={{
+                  background: activeSubTab === tab.id ? 'rgba(255,106,26,0.25)' : 'rgba(255,255,255,0.08)',
+                  color: activeSubTab === tab.id ? '#ff9a4a' : 'rgba(255,255,255,0.4)',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: '2px 6px',
+                  borderRadius: 6
+                }}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.3)' }}>
-          <RefreshCw size={28} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px', display: 'block' }} /><p>Loading…</p>
-        </div>
-      ) : invoices.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.3)' }}>No invoices yet.</div>
-      ) : (
-        <div style={{ ...S.card, padding: 0, overflowX: 'auto', overflowY: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
-            <thead style={{ background: 'rgba(0,0,0,0.2)' }}>
-              <tr>
-                <th style={{ padding: '16px 24px', textAlign: 'left', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Invoice</th>
-                <th style={{ padding: '16px 24px', textAlign: 'left', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Client / Project</th>
-                <th style={{ padding: '16px 24px', textAlign: 'left', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Date</th>
-                <th style={{ padding: '16px 24px', textAlign: 'right', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Amount</th>
-                <th style={{ padding: '16px 24px', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Status</th>
-                <th style={{ padding: '16px 24px', textAlign: 'right', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoices.map(inv => (
-                <tr key={inv.id} className="inv-row" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', transition: 'background 0.2s' }}>
-                  <td style={{ padding: '18px 24px', fontWeight: 700, color: '#fff', verticalAlign: 'middle' }}>{inv.invoiceNumber}</td>
-                  <td style={{ padding: '18px 24px', verticalAlign: 'middle' }}>
-                    <div style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>{inv.billTo}</div>
-                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 4 }}>{inv.project}</div>
-                  </td>
-                  <td style={{ padding: '18px 24px', color: 'rgba(255,255,255,0.5)', fontSize: 13, verticalAlign: 'middle' }}>{fmtDate(inv.date)}</td>
-                  <td style={{ padding: '18px 24px', textAlign: 'right', color: '#ff9a4a', fontWeight: 700, fontSize: 16, verticalAlign: 'middle' }}>₱{fmt(inv.total)}</td>
-                  <td style={{ padding: '18px 24px', textAlign: 'center', verticalAlign: 'middle' }}>
-                    {inv.status === 'paid' ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', fontSize: 11, fontWeight: 600, background: 'rgba(52,211,153,0.1)', color: '#34d399', border: '1px solid rgba(52,211,153,0.2)', borderRadius: 8 }}>
-                        <CheckCircle2 size={11} /> Paid
-                      </span>
-                    ) : (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', fontSize: 11, fontWeight: 600, background: 'rgba(248,113,113,0.1)', color: '#f87171', border: '1px solid rgba(248,113,113,0.2)', borderRadius: 8 }}>
-                        <Clock size={11} /> Unpaid
-                      </span>
-                    )}
-                  </td>
-                  <td style={{ padding: '18px 24px', verticalAlign: 'middle' }}>
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                      {inv.status === 'paid' ? (
-                        <button onClick={() => setViewInv(inv)} style={{ ...S.btn, background: 'rgba(96,165,250,0.1)', color: '#60a5fa' }} title="View Details"><Eye size={14} /> View</button>
-                      ) : (
-                        <button onClick={() => openPayModal(inv)} style={{ ...S.btn, background: 'rgba(248,113,113,0.15)', color: '#f87171', border: '1px solid rgba(248,113,113,0.2)' }} title="Mark as Paid"><CreditCard size={14} /> Mark As Paid</button>
-                      )}
-                      <button onClick={() => printInvoice(inv)} style={{ ...S.btn, background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)' }} title="Print Invoice"><Printer size={14} /> Print</button>
-                      {isSuperAdmin && (
-                        <>
-                          <button onClick={() => openEdit(inv)} style={{ ...S.btn, background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)', padding: 8 }} title="Edit"><Edit2 size={14} /></button>
-                          <button onClick={() => handleDelete(inv)} style={{ ...S.btn, background: 'rgba(239,68,68,0.1)', color: '#f87171', padding: 8 }} title="Delete"><Trash2 size={14} /></button>
-                        </>
-                      )}
+      {/* RENDER ACTIVE TAB */}
+
+      {/* 1. INVOICES TAB */}
+      {activeSubTab === 'invoices' && (
+        <>
+          {/* Invoice Summary Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 14, marginBottom: 28 }}>
+            {[{ l: 'Total Invoices', v: invoices.length, c: '#fff' }, { l: 'Paid Invoices', v: paid.length, c: '#34d399' }, { l: 'Unpaid Invoices', v: unpaid.length, c: '#f87171' }, { l: 'Total Revenue', v: `₱${fmt(revenue)}`, c: '#ff9a4a' }].map(({ l, v, c }) => (
+              <div key={l} style={{ ...S.card }}>
+                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{l}</div>
+                <div style={{ color: c, fontSize: 24, fontWeight: 700 }}>{v}</div>
+              </div>
+            ))}
+          </div>
+
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.3)' }}>
+              <RefreshCw size={28} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px', display: 'block' }} /><p>Loading…</p>
+            </div>
+          ) : invoices.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.3)' }}>No invoices yet.</div>
+          ) : (
+            <div style={{ ...S.card, padding: 0, overflowX: 'auto', overflowY: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
+                <thead style={{ background: 'rgba(0,0,0,0.2)' }}>
+                  <tr>
+                    <th style={{ padding: '16px 24px', textAlign: 'left', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Invoice</th>
+                    <th style={{ padding: '16px 24px', textAlign: 'left', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Client / Project</th>
+                    <th style={{ padding: '16px 24px', textAlign: 'left', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Date</th>
+                    <th style={{ padding: '16px 24px', textAlign: 'right', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Amount</th>
+                    <th style={{ padding: '16px 24px', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Status</th>
+                    <th style={{ padding: '16px 24px', textAlign: 'right', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoices.map(inv => (
+                    <tr key={inv.id} className="inv-row" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', transition: 'background 0.2s' }}>
+                      <td style={{ padding: '18px 24px', fontWeight: 700, color: '#fff', verticalAlign: 'middle' }}>{inv.invoiceNumber}</td>
+                      <td style={{ padding: '18px 24px', verticalAlign: 'middle' }}>
+                        <div style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>{inv.billTo}</div>
+                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 4 }}>{inv.project}</div>
+                      </td>
+                      <td style={{ padding: '18px 24px', color: 'rgba(255,255,255,0.5)', fontSize: 13, verticalAlign: 'middle' }}>{fmtDate(inv.date)}</td>
+                      <td style={{ padding: '18px 24px', textAlign: 'right', color: '#ff9a4a', fontWeight: 700, fontSize: 16, verticalAlign: 'middle' }}>₱{fmt(inv.total)}</td>
+                      <td style={{ padding: '18px 24px', textAlign: 'center', verticalAlign: 'middle' }}>
+                        {inv.status === 'paid' ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', fontSize: 11, fontWeight: 600, background: 'rgba(52,211,153,0.1)', color: '#34d399', border: '1px solid rgba(52,211,153,0.2)', borderRadius: 8 }}>
+                            <CheckCircle2 size={11} /> Paid
+                          </span>
+                        ) : (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', fontSize: 11, fontWeight: 600, background: 'rgba(248,113,113,0.1)', color: '#f87171', border: '1px solid rgba(248,113,113,0.2)', borderRadius: 8 }}>
+                            <Clock size={11} /> Unpaid
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ padding: '18px 24px', verticalAlign: 'middle' }}>
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                          {inv.status === 'paid' ? (
+                            <button onClick={() => setViewInv(inv)} style={{ ...S.btn, background: 'rgba(96,165,250,0.1)', color: '#60a5fa' }} title="View Details"><Eye size={14} /> View</button>
+                          ) : (
+                            <button onClick={() => openPayModal(inv)} style={{ ...S.btn, background: 'rgba(248,113,113,0.15)', color: '#f87171', border: '1px solid rgba(248,113,113,0.2)' }} title="Mark as Paid"><CreditCard size={14} /> Mark As Paid</button>
+                          )}
+                          <button onClick={() => printInvoice(inv)} style={{ ...S.btn, background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)' }} title="Print Invoice"><Printer size={14} /> Print</button>
+                          {isSuperAdmin && (
+                            <>
+                              <button onClick={() => openEdit(inv)} style={{ ...S.btn, background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)', padding: 8 }} title="Edit"><Edit2 size={14} /></button>
+                              <button onClick={() => handleDelete(inv)} style={{ ...S.btn, background: 'rgba(239,68,68,0.1)', color: '#f87171', padding: 8 }} title="Delete"><Trash2 size={14} /></button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* 2. EXPENSES TAB */}
+      {activeSubTab === 'expenses' && (
+        <>
+          {/* Expenses Summary Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 14, marginBottom: 28 }}>
+            {[
+              { l: 'Total Expenses Recorded', v: expenses.length, c: '#fff' },
+              { l: 'Paid Expenses', v: `₱${fmt(paidExpensesAmount)}`, c: '#34d399' },
+              { l: 'Pending Expenses', v: `₱${fmt(pendingExpensesAmount)}`, c: '#f87171' },
+              { l: 'Total Outflow', v: `₱${fmt(totalExpensesAmount)}`, c: '#ff9a4a' }
+            ].map(({ l, v, c }) => (
+              <div key={l} style={{ ...S.card }}>
+                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{l}</div>
+                <div style={{ color: c, fontSize: 24, fontWeight: 700 }}>{v}</div>
+              </div>
+            ))}
+          </div>
+
+          {expensesLoading ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.3)' }}>
+              <RefreshCw size={28} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px', display: 'block' }} /><p>Loading Expenses…</p>
+            </div>
+          ) : expenses.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.3)' }}>No expenses recorded yet.</div>
+          ) : (
+            <div style={{ ...S.card, padding: 0, overflowX: 'auto', overflowY: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
+                <thead style={{ background: 'rgba(0,0,0,0.2)' }}>
+                  <tr>
+                    <th style={{ padding: '16px 24px', textAlign: 'left', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Description / Vendor</th>
+                    <th style={{ padding: '16px 24px', textAlign: 'left', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Category</th>
+                    <th style={{ padding: '16px 24px', textAlign: 'left', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Date</th>
+                    <th style={{ padding: '16px 24px', textAlign: 'right', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Amount</th>
+                    <th style={{ padding: '16px 24px', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Status</th>
+                    <th style={{ padding: '16px 24px', textAlign: 'right', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {expenses.map(exp => (
+                    <tr key={exp.id} className="inv-row" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', transition: 'background 0.2s' }}>
+                      <td style={{ padding: '18px 24px', verticalAlign: 'middle' }}>
+                        <div style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>{exp.title}</div>
+                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 4 }}>Payee: {exp.payee} {exp.referenceNumber ? `(Ref: ${exp.referenceNumber})` : ''}</div>
+                      </td>
+                      <td style={{ padding: '18px 24px', verticalAlign: 'middle' }}>
+                        <span style={{ fontSize: 12, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)', padding: '4px 8px', borderRadius: 6 }}>
+                          {exp.category}
+                        </span>
+                      </td>
+                      <td style={{ padding: '18px 24px', color: 'rgba(255,255,255,0.5)', fontSize: 13, verticalAlign: 'middle' }}>{fmtDate(exp.date)}</td>
+                      <td style={{ padding: '18px 24px', textAlign: 'right', color: '#ff9a4a', fontWeight: 700, fontSize: 16, verticalAlign: 'middle' }}>₱{fmt(exp.amount)}</td>
+                      <td style={{ padding: '18px 24px', textAlign: 'center', verticalAlign: 'middle' }}>
+                        {exp.status === 'paid' ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', fontSize: 11, fontWeight: 600, background: 'rgba(52,211,153,0.1)', color: '#34d399', border: '1px solid rgba(52,211,153,0.2)', borderRadius: 8 }}>
+                            <CheckCircle2 size={11} /> Paid
+                          </span>
+                        ) : (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', fontSize: 11, fontWeight: 600, background: 'rgba(248,113,113,0.1)', color: '#f87171', border: '1px solid rgba(248,113,113,0.2)', borderRadius: 8 }}>
+                            <Clock size={11} /> Pending
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ padding: '18px 24px', verticalAlign: 'middle' }}>
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                          {isSuperAdmin && (
+                            <>
+                              <button onClick={() => openEditExpense(exp)} style={{ ...S.btn, background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)', padding: 8 }} title="Edit"><Edit2 size={14} /></button>
+                              <button onClick={() => handleDeleteExpense(exp)} style={{ ...S.btn, background: 'rgba(239,68,68,0.1)', color: '#f87171', padding: 8 }} title="Delete"><Trash2 size={14} /></button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* 3. FINANCIAL SUMMARY TAB */}
+      {activeSubTab === 'summary' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {/* Key Combined Metrics */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 16 }}>
+            {/* Revenue card */}
+            <div style={{ ...S.card, border: '1px solid rgba(52,211,153,0.15)', background: 'linear-gradient(135deg, rgba(52,211,153,0.02), rgba(255,255,255,0.03))' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Total Net Revenue</span>
+                <span style={{ background: 'rgba(52,211,153,0.12)', color: '#34d399', borderRadius: '50%', p: 6, display: 'flex', padding: 6 }}><ArrowUpRight size={16} /></span>
+              </div>
+              <div style={{ color: '#34d399', fontSize: 26, fontWeight: 700 }}>₱{fmt(revenue)}</div>
+              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, margin: '6px 0 0' }}>From paid client invoices</p>
+            </div>
+
+            {/* Operating Expense card */}
+            <div style={{ ...S.card, border: '1px solid rgba(248,113,113,0.15)', background: 'linear-gradient(135deg, rgba(248,113,113,0.02), rgba(255,255,255,0.03))' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Operating Expenditures</span>
+                <span style={{ background: 'rgba(248,113,113,0.12)', color: '#f87171', borderRadius: '50%', p: 6, display: 'flex', padding: 6 }}><ArrowDownRight size={16} /></span>
+              </div>
+              <div style={{ color: '#f87171', fontSize: 26, fontWeight: 700 }}>₱{fmt(paidExpensesAmount)}</div>
+              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, margin: '6px 0 0' }}>Paid operational expenses</p>
+            </div>
+
+            {/* Net Profit Card */}
+            {(() => {
+              const netProfit = revenue - paidExpensesAmount;
+              const margin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
+              const positive = netProfit >= 0;
+              return (
+                <div style={{ ...S.card, border: `1px solid ${positive ? 'rgba(251,191,36,0.15)' : 'rgba(239,68,68,0.2)'}`, background: 'linear-gradient(135deg, rgba(251,191,36,0.02), rgba(255,255,255,0.03))' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Net Income</span>
+                    <span style={{ background: positive ? 'rgba(251,191,36,0.12)' : 'rgba(239,68,68,0.15)', color: positive ? '#fbbf24' : '#ef4444', borderRadius: '50%', display: 'flex', padding: 6 }}><DollarSign size={16} /></span>
+                  </div>
+                  <div style={{ color: positive ? '#fbbf24' : '#ef4444', fontSize: 26, fontWeight: 700 }}>₱{fmt(netProfit)}</div>
+                  <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, margin: '6px 0 0' }}>
+                    Margin: <span style={{ color: positive ? '#34d399' : '#f87171', fontWeight: 600 }}>{margin.toFixed(1)}%</span>
+                  </p>
+                </div>
+              );
+            })()}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+            {/* Category Breakdown list */}
+            <div style={{ ...S.card }}>
+              <h3 style={{ color: '#fff', fontSize: 15, fontWeight: 700, marginTop: 0, marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 10 }}>Expenditure Category Breakdown</h3>
+              {EXPENSE_CATEGORIES.map(cat => {
+                const amt = categoryTotals[cat] || 0;
+                const pct = totalExpensesAmount > 0 ? (amt / totalExpensesAmount) * 100 : 0;
+                return (
+                  <div key={cat} style={{ marginBottom: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
+                      <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{cat}</span>
+                      <span style={{ color: '#fff', fontWeight: 600 }}>₱{fmt(amt)} <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 400 }}>({pct.toFixed(1)}%)</span></span>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg,#ff6a1a,#ff9a4a)', borderRadius: 3 }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Monthly Profitability Table */}
+            <div style={{ ...S.card, paddingRight: 0, paddingLeft: 0 }}>
+              <h3 style={{ color: '#fff', fontSize: 15, fontWeight: 700, marginTop: 0, marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 10, paddingLeft: 24, paddingRight: 24 }}>Monthly Earnings</h3>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: 'rgba(0,0,0,0.1)' }}>
+                      <th style={{ padding: '12px 24px', textAlign: 'left', color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Month</th>
+                      <th style={{ padding: '12px 24px', textAlign: 'right', color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Revenue</th>
+                      <th style={{ padding: '12px 24px', textAlign: 'right', color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Expenses</th>
+                      <th style={{ padding: '12px 24px', textAlign: 'right', color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Net</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {monthlyData.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} style={{ padding: 24, textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>No historical performance recorded.</td>
+                      </tr>
+                    ) : (
+                      monthlyData.map(m => (
+                        <tr key={m.ym} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                          <td style={{ padding: '12px 24px', color: '#fff', fontSize: 13, fontWeight: 600 }}>{m.monthName}</td>
+                          <td style={{ padding: '12px 24px', textAlign: 'right', color: '#34d399', fontSize: 13, fontWeight: 500 }}>₱{fmt(m.revenue)}</td>
+                          <td style={{ padding: '12px 24px', textAlign: 'right', color: '#f87171', fontSize: 13, fontWeight: 500 }}>₱{fmt(m.expenses)}</td>
+                          <td style={{ padding: '12px 24px', textAlign: 'right', color: m.net >= 0 ? '#fbbf24' : '#ef4444', fontSize: 13, fontWeight: 700 }}>₱{fmt(m.net)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Payment Modal */}
+      {/* MODALS SECTION */}
+
+      {/* Invoice Pay Modal */}
       {payModal && (
         <>
           <div onClick={() => setPayModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', zIndex: 200 }} />
@@ -345,6 +891,7 @@ export default function AdminInvoices({ firebaseUser, isSuperAdmin }) {
         </>
       )}
 
+      {/* Invoice Drawer Sidebar */}
       {showSidebar && (
         <>
           <div onClick={() => setShowSidebar(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 100 }} />
@@ -433,6 +980,89 @@ export default function AdminInvoices({ firebaseUser, isSuperAdmin }) {
 
               <button type="submit" disabled={saving} style={{ ...S.btn, background: saving ? 'rgba(255,106,26,0.4)' : 'linear-gradient(135deg,#ff6a1a,#ff9a4a)', color: '#fff', padding: '13px 0', justifyContent: 'center', fontSize: 15, fontWeight: 600, boxShadow: saving ? 'none' : '0 4px 16px rgba(255,106,26,0.3)', width: '100%', marginTop: 4 }}>
                 {saving ? 'Saving…' : editingId ? 'Update Invoice' : 'Create Invoice'}
+              </button>
+            </form>
+          </div>
+        </>
+      )}
+
+      {/* Expenses Drawer Sidebar */}
+      {showExpenseSidebar && (
+        <>
+          <div onClick={() => setShowExpenseSidebar(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 100 }} />
+          <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '100%', maxWidth: 520, background: '#0f1218', borderLeft: '1px solid rgba(255,255,255,0.1)', zIndex: 101, overflowY: 'auto', padding: 32 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+              <h3 style={{ color: '#fff', fontSize: 18, fontWeight: 700, margin: 0 }}>{expenseEditingId ? 'Edit Expense' : 'Record Expense'}</h3>
+              <button onClick={() => setShowExpenseSidebar(false)} style={{ ...S.btn, background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.6)', padding: '6px 10px' }}><X size={16} /></button>
+            </div>
+
+            <form onSubmit={handleSubmitExpense} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              <div>
+                <label style={S.lbl}>Expense Description</label>
+                <input style={S.inp} value={expenseForm.title} onChange={e => setExpenseForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Office Internet - May" required />
+              </div>
+              <div>
+                <label style={S.lbl}>Category</label>
+                <select style={S.inp} value={expenseForm.category} onChange={e => setExpenseForm(f => ({ ...f, category: e.target.value }))} required>
+                  {EXPENSE_CATEGORIES.map(cat => (
+                    <option key={cat} value={cat} style={{ background: '#0f1218', color: '#fff' }}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                <div>
+                  <label style={S.lbl}>Amount (₱)</label>
+                  <input type="number" min="0" step="0.01" style={S.inp} value={expenseForm.amount} onChange={e => setExpenseForm(f => ({ ...f, amount: e.target.value }))} placeholder="0.00" required />
+                </div>
+                <div>
+                  <label style={S.lbl}>Date</label>
+                  <input type="date" style={S.inp} value={expenseForm.date} onChange={e => setExpenseForm(f => ({ ...f, date: e.target.value }))} required />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                <div>
+                  <label style={S.lbl}>Payee / Vendor</label>
+                  <input style={S.inp} value={expenseForm.payee} onChange={e => setExpenseForm(f => ({ ...f, payee: e.target.value }))} placeholder="e.g. PLDT" required />
+                </div>
+                <div>
+                  <label style={S.lbl}>Reference / Invoice #</label>
+                  <input style={S.inp} value={expenseForm.referenceNumber} onChange={e => setExpenseForm(f => ({ ...f, referenceNumber: e.target.value }))} placeholder="e.g. Receipt Reference" />
+                </div>
+              </div>
+              <div>
+                <label style={S.lbl}>Status</label>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  {[
+                    { id: 'paid', label: '✓ Paid', color: '#34d399', bg: 'rgba(52,211,153,0.1)' },
+                    { id: 'pending', label: '⏰ Pending', color: '#f87171', bg: 'rgba(248,113,113,0.1)' }
+                  ].map(st => (
+                    <button
+                      key={st.id}
+                      type="button"
+                      onClick={() => setExpenseForm(f => ({ ...f, status: st.id }))}
+                      style={{
+                        ...S.btn,
+                        flex: 1,
+                        justifyContent: 'center',
+                        background: expenseForm.status === st.id ? st.bg : 'rgba(255,255,255,0.05)',
+                        border: `1px solid ${expenseForm.status === st.id ? st.color : 'rgba(255,255,255,0.1)'}`,
+                        color: expenseForm.status === st.id ? st.color : 'rgba(255,255,255,0.5)',
+                        fontWeight: 600,
+                        padding: '10px 0',
+                        borderRadius: 10
+                      }}
+                    >
+                      {st.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label style={S.lbl}>Notes (Optional)</label>
+                <textarea style={{ ...S.inp, resize: 'vertical', minHeight: 70 }} value={expenseForm.notes} onChange={e => setExpenseForm(f => ({ ...f, notes: e.target.value }))} placeholder="Additional notes…" />
+              </div>
+              <button type="submit" disabled={savingExpense} style={{ ...S.btn, background: savingExpense ? 'rgba(255,106,26,0.4)' : 'linear-gradient(135deg,#ff6a1a,#ff9a4a)', color: '#fff', padding: '13px 0', justifyContent: 'center', fontSize: 15, fontWeight: 600, boxShadow: savingExpense ? 'none' : '0 4px 16px rgba(255,106,26,0.3)', width: '100%', marginTop: 4 }}>
+                {savingExpense ? 'Saving…' : expenseEditingId ? 'Update Expense' : 'Record Expense'}
               </button>
             </form>
           </div>

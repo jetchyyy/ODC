@@ -42,6 +42,7 @@ import {
     Hammer,
     Settings,
     MailSearch,
+    TrendingUp,
 } from 'lucide-react';
 
 /* ─── Superadmin emails (comma-separated in .env) ─── */
@@ -495,7 +496,7 @@ function AdminDashboard({ firebaseUser }) {
                     {[
                       { id: 'contacts', label: 'Contacts', Icon: LayoutList }, 
                       ...(superAdmin ? [
-                        { id: 'invoices', label: 'Invoices', Icon: FileText }, 
+                      { id: 'invoices', label: 'Invoices & Finance', Icon: TrendingUp }, 
                         { id: 'moa', label: 'MOA', Icon: FileSignature }, 
                         { id: 'tickets', label: 'Tickets', Icon: MessageSquare }, 
                         { id: 'clients', label: 'Clients', Icon: Users },
