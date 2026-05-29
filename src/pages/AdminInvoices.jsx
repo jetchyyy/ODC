@@ -108,9 +108,27 @@ th{background:#f0f0f0;padding:10px 14px;font-size:11px;letter-spacing:1px;border
   w.document.close();
 }
 
-function printFinancialReport(invoices, expenses) {
-  const paidInvs = invoices.filter(i => i.status === 'paid');
-  const paidExps = expenses.filter(e => e.status === 'paid');
+function printFinancialReport(invoices, expenses, scope = 'overall', scopeValue = '', preparedBy = CO.preparedBy) {
+  let paidInvs = invoices.filter(i => i.status === 'paid');
+  let paidExps = expenses.filter(e => e.status === 'paid');
+  
+  let reportTitle = 'SHAREHOLDER FINANCIAL REPORT';
+  let scopeSubtitle = 'All-Time Performance';
+  
+  if (scope === 'yearly') {
+    paidInvs = paidInvs.filter(i => (i.date || '').startsWith(scopeValue));
+    paidExps = paidExps.filter(e => (e.date || '').startsWith(scopeValue));
+    reportTitle = `YEARLY SHAREHOLDER FINANCIAL REPORT - ${scopeValue}`;
+    scopeSubtitle = `Yearly Performance for Calendar Year ${scopeValue}`;
+  } else if (scope === 'monthly') {
+    paidInvs = paidInvs.filter(i => (i.date || '').startsWith(scopeValue));
+    paidExps = paidExps.filter(e => (e.date || '').startsWith(scopeValue));
+    const [yr, mo] = scopeValue.split('-');
+    const d = new Date(Number(yr), Number(mo) - 1, 1);
+    const monthName = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    reportTitle = `MONTHLY SHAREHOLDER FINANCIAL REPORT - ${monthName.toUpperCase()}`;
+    scopeSubtitle = `Monthly Performance for ${monthName}`;
+  }
   
   const totalRevenue = paidInvs.reduce((s, i) => s + (i.total || 0), 0);
   const totalExpenses = paidExps.reduce((s, e) => s + (e.amount || 0), 0);
@@ -169,7 +187,100 @@ function printFinancialReport(invoices, expenses) {
     </tr>`;
   }).join('');
   
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Financial Statement - Odyssey Clinic</title><style>
+  let middleSection = '';
+  
+  if (scope === 'monthly') {
+    // Combine paid invoices and paid expenses into a single ledger list
+    const ledger = [];
+    paidInvs.forEach(inv => {
+      ledger.push({
+        date: inv.date,
+        type: 'Revenue (Invoice)',
+        desc: `${inv.billTo} - ${inv.project} (${inv.invoiceNumber})`,
+        category: 'Invoiced Service',
+        revenue: inv.total || 0,
+        expense: 0
+      });
+    });
+    paidExps.forEach(exp => {
+      ledger.push({
+        date: exp.date,
+        type: 'Expense',
+        desc: exp.title,
+        category: exp.category,
+        revenue: 0,
+        expense: exp.amount || 0
+      });
+    });
+    
+    // Sort by date ascending
+    ledger.sort((a, b) => a.date.localeCompare(b.date));
+    
+    const ledgerRows = ledger.map(item => `
+      <tr>
+        <td class="td">${fmtDate(item.date)}</td>
+        <td class="td">${item.type}</td>
+        <td class="td">${item.desc}</td>
+        <td class="td">${item.category}</td>
+        <td class="td ar" style="color: #0f9d58">${item.revenue > 0 ? '&#8369; ' + fmt(item.revenue) : '—'}</td>
+        <td class="td ar" style="color: #d93025">${item.expense > 0 ? '&#8369; ' + fmt(item.expense) : '—'}</td>
+      </tr>
+    `).join('');
+    
+    middleSection = `
+      <div class="section-title">Transactional Details</div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:15%">DATE</th>
+            <th style="width:15%">TYPE</th>
+            <th style="width:30%">DESCRIPTION</th>
+            <th style="width:15%">CATEGORY</th>
+            <th style="width:12.5%">REVENUE</th>
+            <th style="width:12.5%">EXPENSE</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${ledgerRows || '<tr><td colspan="6" class="td" style="text-align:center">No transactions recorded for this month.</td></tr>'}
+        </tbody>
+        <tfoot>
+          <tr class="sub-row">
+            <td class="td" colspan="4">Total</td>
+            <td class="td ar" style="color: #0f9d58">&#8369; ${fmt(totalRevenue)}</td>
+            <td class="td ar" style="color: #d93025">&#8369; ${fmt(totalExpenses)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    `;
+  } else {
+    // Show Monthly Operating Performance table for Overall or Yearly reports
+    middleSection = `
+      <div class="section-title">Monthly Operating Performance</div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40%">MONTH</th>
+            <th style="width:20%">REVENUE</th>
+            <th style="width:20%">EXPENSES</th>
+            <th style="width:20%">NET PROFIT</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${monthlyRows || '<tr><td colspan="4" class="td" style="text-align:center">No monthly transactional data available.</td></tr>'}
+        </tbody>
+        <tfoot>
+          <tr class="sub-row">
+            <td class="td">Total</td>
+            <td class="td ar">&#8369; ${fmt(totalRevenue)}</td>
+            <td class="td ar">&#8369; ${fmt(totalExpenses)}</td>
+            <td class="td ar ${netProfit >= 0 ? 'pos' : 'neg'}">&#8369; ${fmt(netProfit)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    `;
+  }
+  
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${reportTitle}</title><style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:Arial,sans-serif;font-size:12px;color:#333;background:#fff}
 .pg{width:794px;min-height:1100px;padding:50px 60px;margin:0 auto}
@@ -202,8 +313,9 @@ th{background:#f0f0f0;padding:10px 14px;font-size:11px;letter-spacing:1px;border
     <div class="logo"><img src="${logoUrl}" alt="ODC" /></div>
     <div class="ci">${CO.address}<br><a href="mailto:${CO.email}">${CO.email}</a><br>${CO.phone}</div>
   </div>
-  <div class="ttl">SHAREHOLDER FINANCIAL REPORT</div>
+  <div class="ttl">${reportTitle}</div>
   <div style="margin-bottom: 24px; color:#555; text-align:center; font-size:11px">
+    Scope: <b>${scopeSubtitle}</b><br>
     Prepared on ${new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
   </div>
   
@@ -222,28 +334,7 @@ th{background:#f0f0f0;padding:10px 14px;font-size:11px;letter-spacing:1px;border
     </div>
   </div>
 
-  <div class="section-title">Monthly Operating Performance</div>
-  <table>
-    <thead>
-      <tr>
-        <th style="width:40%">MONTH</th>
-        <th style="width:20%">REVENUE</th>
-        <th style="width:20%">EXPENSES</th>
-        <th style="width:20%">NET PROFIT</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${monthlyRows || '<tr><td colspan="4" class="td" style="text-align:center">No monthly transactional data available.</td></tr>'}
-    </tbody>
-    <tfoot>
-      <tr class="sub-row">
-        <td class="td">Total</td>
-        <td class="td ar">&#8369; ${fmt(totalRevenue)}</td>
-        <td class="td ar">&#8369; ${fmt(totalExpenses)}</td>
-        <td class="td ar ${netProfit >= 0 ? 'pos' : 'neg'}">&#8369; ${fmt(netProfit)}</td>
-      </tr>
-    </tfoot>
-  </table>
+  ${middleSection}
 
   <div class="section-title">Expense Breakdown by Category</div>
   <table>
@@ -267,7 +358,7 @@ th{background:#f0f0f0;padding:10px 14px;font-size:11px;letter-spacing:1px;border
   </table>
 
   <div class="ft">
-    <div><b>Prepared By:</b><br><div class="sig-block">${CO.preparedBy}</div><div class="sig"></div></div>
+    <div><b>Prepared By:</b><br><div class="sig-block">${preparedBy}</div><div class="sig"></div></div>
     <div><b>Approved By:</b><br><div class="sig-block">${CO.approvedBy}</div><div class="sig"></div></div>
   </div>
 </div>
@@ -307,6 +398,45 @@ export default function AdminInvoices({ firebaseUser, isSuperAdmin }) {
 
   // Sub-Navigation State
   const [activeSubTab, setActiveSubTab] = useState('invoices'); // 'invoices' | 'expenses' | 'summary'
+
+  // Report Generation Modal State
+  const [reportModal, setReportModal] = useState(false);
+  const [selectedScope, setSelectedScope] = useState('overall'); // 'overall' | 'yearly' | 'monthly'
+  const [selectedYear, setSelectedYear] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState('');
+  const [reportPreparedBy, setReportPreparedBy] = useState(CO.preparedBy);
+
+  const getAvailablePeriods = () => {
+    const years = new Set();
+    const months = new Set();
+    
+    invoices.forEach(inv => {
+      if (inv.date) {
+        years.add(inv.date.substring(0, 4));
+        months.add(inv.date.substring(0, 7));
+      }
+    });
+    expenses.forEach(exp => {
+      if (exp.date) {
+        years.add(exp.date.substring(0, 4));
+        months.add(exp.date.substring(0, 7));
+      }
+    });
+    
+    return {
+      years: Array.from(years).sort((a, b) => b.localeCompare(a)),
+      months: Array.from(months).sort((a, b) => b.localeCompare(a))
+    };
+  };
+
+  const openReportModal = () => {
+    const { years, months } = getAvailablePeriods();
+    setSelectedYear(years[0] || new Date().getFullYear().toString());
+    setSelectedMonth(months[0] || new Date().toISOString().substring(0, 7));
+    setSelectedScope('overall');
+    setReportPreparedBy(CO.preparedBy);
+    setReportModal(true);
+  };
 
   // Load Invoices and Expenses
   const load = useCallback(async (spin = true) => {
@@ -498,7 +628,7 @@ export default function AdminInvoices({ firebaseUser, isSuperAdmin }) {
             </button>
           )}
           {activeSubTab === 'summary' && (
-            <button onClick={() => printFinancialReport(invoices, expenses)} style={{ ...S.btn, background: 'linear-gradient(135deg,#ff6a1a,#ff9a4a)', color: '#fff', padding: '10px 18px', boxShadow: '0 4px 14px rgba(255,106,26,0.3)' }}>
+            <button onClick={openReportModal} style={{ ...S.btn, background: 'linear-gradient(135deg,#ff6a1a,#ff9a4a)', color: '#fff', padding: '10px 18px', boxShadow: '0 4px 14px rgba(255,106,26,0.3)' }}>
               <Printer size={16} /> Print Shareholder Report
             </button>
           )}
@@ -816,6 +946,129 @@ export default function AdminInvoices({ firebaseUser, isSuperAdmin }) {
       )}
 
       {/* MODALS SECTION */}
+
+      {/* Shareholder Report Selection Modal */}
+      {reportModal && (() => {
+        const { years, months } = getAvailablePeriods();
+        return (
+          <>
+            <div onClick={() => setReportModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', zIndex: 200 }} />
+            <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#0f1218', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20, padding: 32, zIndex: 201, width: '100%', maxWidth: 440 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <h3 style={{ color: '#fff', fontSize: 17, fontWeight: 700, margin: 0 }}>Generate Shareholder Report</h3>
+                <button onClick={() => setReportModal(false)} style={{ ...S.btn, background: 'none', color: 'rgba(255,255,255,0.5)', padding: 4 }}><X size={16} /></button>
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginBottom: 20 }}>Select the scope of the financial report you want to view and generate.</div>
+              
+              <div style={{ marginBottom: 18 }}>
+                <label style={S.lbl}>Report Scope</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginTop: 8 }}>
+                  {[
+                    { id: 'overall', label: 'Overall' },
+                    { id: 'yearly', label: 'Yearly' },
+                    { id: 'monthly', label: 'Monthly' }
+                  ].map(({ id, label }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setSelectedScope(id)}
+                      style={{
+                        ...S.btn,
+                        justifyContent: 'center',
+                        padding: '10px 0',
+                        background: selectedScope === id ? 'rgba(255,106,26,0.15)' : 'rgba(255,255,255,0.05)',
+                        border: `1px solid ${selectedScope === id ? 'rgba(255,106,26,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                        color: selectedScope === id ? '#ff9a4a' : 'rgba(255,255,255,0.6)',
+                        fontWeight: selectedScope === id ? 700 : 400,
+                        borderRadius: 10
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {selectedScope === 'yearly' && (
+                <div style={{ marginBottom: 18 }}>
+                  <label style={S.lbl}>Select Year</label>
+                  {years.length === 0 ? (
+                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, padding: '10px 0' }}>No yearly data available</div>
+                  ) : (
+                    <select
+                      style={S.inp}
+                      value={selectedYear}
+                      onChange={e => setSelectedYear(e.target.value)}
+                    >
+                      {years.map(yr => (
+                        <option key={yr} value={yr} style={{ background: '#0f1218', color: '#fff' }}>{yr}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
+
+              {selectedScope === 'monthly' && (
+                <div style={{ marginBottom: 18 }}>
+                  <label style={S.lbl}>Select Month</label>
+                  {months.length === 0 ? (
+                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, padding: '10px 0' }}>No monthly data available</div>
+                  ) : (
+                    <select
+                      style={S.inp}
+                      value={selectedMonth}
+                      onChange={e => setSelectedMonth(e.target.value)}
+                    >
+                      {months.map(ym => {
+                        const [year, month] = ym.split('-');
+                        const d = new Date(Number(year), Number(month) - 1, 1);
+                        const monthLabel = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                        return (
+                          <option key={ym} value={ym} style={{ background: '#0f1218', color: '#fff' }}>{monthLabel}</option>
+                        );
+                      })}
+                    </select>
+                  )}
+                </div>
+              )}
+
+              <div style={{ marginBottom: 18 }}>
+                <label style={S.lbl}>Prepared By</label>
+                <input
+                  style={S.inp}
+                  value={reportPreparedBy}
+                  onChange={e => setReportPreparedBy(e.target.value)}
+                  placeholder="e.g. Johnjosefir Roca"
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+                <button onClick={() => setReportModal(false)} style={{ ...S.btn, flex: 1, justifyContent: 'center', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}>Cancel</button>
+                <button
+                  onClick={() => {
+                    const val = selectedScope === 'yearly' ? selectedYear : selectedScope === 'monthly' ? selectedMonth : '';
+                    printFinancialReport(invoices, expenses, selectedScope, val, reportPreparedBy);
+                    setReportModal(false);
+                  }}
+                  disabled={(selectedScope === 'yearly' && !selectedYear) || (selectedScope === 'monthly' && !selectedMonth)}
+                  style={{
+                    ...S.btn,
+                    flex: 2,
+                    justifyContent: 'center',
+                    background: 'linear-gradient(135deg,#ff6a1a,#ff9a4a)',
+                    color: '#fff',
+                    fontWeight: 600,
+                    padding: '12px 0',
+                    boxShadow: '0 4px 14px rgba(255,106,26,0.3)'
+                  }}
+                >
+                  <Printer size={15} /> Generate & Print
+                </button>
+              </div>
+            </div>
+          </>
+        );
+      })()}
 
       {/* Invoice Pay Modal */}
       {payModal && (
