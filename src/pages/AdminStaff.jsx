@@ -9,6 +9,7 @@ import {
 } from '../utils/navigationConfig';
 import { normalizeAuthIdentifier, formatDisplayIdentifier } from '../utils/authHelpers';
 import { getStaffModulePermissions, saveStaffModulePermissions, registerStaffLoginIdentity } from '../services/staffPermissionService';
+import { listPersonalMailboxes, setPersonalMailbox, turnOffPersonalMailbox } from '../services/emailService';
 import { TRUSTED_STAFF_MODULES, hydrateStaffPermissions, staffModuleChanges } from '../utils/staffModulePermissions';
 import {
   collection,
@@ -212,6 +213,8 @@ export default function AdminStaff({ firebaseUser, isSuperAdmin, can, onOpenAllo
   const [modulePermissionError, setModulePermissionError] = useState('');
   const [modulePermissionLoading, setModulePermissionLoading] = useState(true);
   const [resetSending, setResetSending] = useState(false);
+  // Personal @odysseyph.com addresses, keyed by staff id. Managed through the email Worker (superadmin only).
+  const [workEmails, setWorkEmails] = useState({ byStaff: {}, loaded: false, error: '' });
 
   // Form State
   const [form, setForm] = useState({
@@ -226,6 +229,7 @@ export default function AdminStaff({ firebaseUser, isSuperAdmin, can, onOpenAllo
     allowedTabs: ['contacts', 'tickets'], // default minimal access
     allowedActions: getActionsForTabs(['contacts', 'tickets']),
     demoPresenterEnabled: false,
+    workEmail: '',
   });
 
   const canCreateStaff = can ? can('staff:create') : isSuperAdmin;
@@ -266,10 +270,44 @@ export default function AdminStaff({ firebaseUser, isSuperAdmin, can, onOpenAllo
     }
   }, []);
 
+  const loadWorkEmails = useCallback(async () => {
+    if (!isSuperAdmin) return;
+    try {
+      const { mailboxes } = await listPersonalMailboxes();
+      setWorkEmails({ byStaff: Object.fromEntries(mailboxes.map(m => [m.staffId, m])), loaded: true, error: '' });
+    } catch (error) {
+      setWorkEmails(w => ({ ...w, loaded: false, error: error.message || 'Work emails are unavailable right now.' }));
+    }
+  }, [isSuperAdmin]);
+
   useEffect(() => {
     loadStaff(false);
     loadModulePermissions();
-  }, [loadStaff, loadModulePermissions]);
+    loadWorkEmails();
+  }, [loadStaff, loadModulePermissions, loadWorkEmails]);
+
+  /** Create, rename or turn off the staff member's personal address. Returns an error message, or '' on success. */
+  const syncWorkEmail = async (staffId, ownerEmail, name) => {
+    if (!isSuperAdmin || !workEmails.loaded) return '';
+    const wanted = form.workEmail.trim().toLowerCase().replace(/@.*$/, '');
+    const current = workEmails.byStaff[staffId];
+    const unchanged = current?.active
+      ? wanted === current.local && current.ownerEmail === ownerEmail && current.name === name
+      : !wanted;
+    if (unchanged) return '';
+    try {
+      if (wanted) {
+        const row = await setPersonalMailbox(staffId, { local: wanted, ownerEmail, name });
+        setWorkEmails(w => ({ ...w, byStaff: { ...w.byStaff, [staffId]: row } }));
+      } else {
+        await turnOffPersonalMailbox(staffId);
+        setWorkEmails(w => ({ ...w, byStaff: { ...w.byStaff, [staffId]: { ...current, active: false } } }));
+      }
+      return '';
+    } catch (error) {
+      return error.message || 'The work email could not be saved.';
+    }
+  };
 
   // Toast auto-clear
   useEffect(() => {
@@ -295,6 +333,7 @@ export default function AdminStaff({ firebaseUser, isSuperAdmin, can, onOpenAllo
       allowedTabs: defaultTabs,
       allowedActions: getActionsForTabs(defaultTabs),
       demoPresenterEnabled: false,
+      workEmail: '',
     });
     setErrorMsg('');
     setShowModal(true);
@@ -320,6 +359,7 @@ export default function AdminStaff({ firebaseUser, isSuperAdmin, can, onOpenAllo
       createLogin: !member.hasLoginAccess,
       password: '',
       ...hydrateStaffPermissions(tabs, actions, context, member.id),
+      workEmail: workEmails.byStaff[member.id]?.active ? workEmails.byStaff[member.id].local : '',
     });
     setErrorMsg('');
     setShowModal(true);
@@ -544,7 +584,8 @@ export default function AdminStaff({ firebaseUser, isSuperAdmin, can, onOpenAllo
         phone: form.phone.trim(),
         monthlySalary: Number(form.monthlySalary || 0),
         status: form.status,
-        allowedTabs: form.allowedTabs || [],
+        // A work email needs the Email page; adding the tab alone grants no shared inbox.
+        allowedTabs: form.workEmail.trim() && !(form.allowedTabs || []).includes('email') ? [...(form.allowedTabs || []), 'email'] : form.allowedTabs || [],
         allowedActions: form.allowedActions || [],
         hasLoginAccess: true,
         updatedAt: serverTimestamp(),
@@ -604,6 +645,13 @@ export default function AdminStaff({ firebaseUser, isSuperAdmin, can, onOpenAllo
           for (const [module, grant] of Object.entries(grants)) next[module] = { ...previous[module], grants: { ...previous[module].grants, [savedStaffId]: grant } };
           return next;
         });
+      }
+
+      const workEmailError = await syncWorkEmail(savedStaffId, normalizedEmail, payload.name);
+      if (workEmailError) {
+        loadStaff(false);
+        setErrorMsg(`Staff details were saved, but the work email was not. ${workEmailError}`);
+        return;
       }
 
       setShowModal(false);
@@ -991,6 +1039,12 @@ export default function AdminStaff({ firebaseUser, isSuperAdmin, can, onOpenAllo
                             )}
                           </span>
                         </div>
+                        {workEmails.byStaff[member.id]?.active && (
+                          <div className="inline-flex min-w-0 items-center gap-[5px] text-[#93c5fd]/80">
+                            <Mail size={13} />
+                            <span className="overflow-hidden text-ellipsis">{workEmails.byStaff[member.id].local}@odysseyph.com</span>
+                          </div>
+                        )}
                         {member.phone && (
                           <div className="inline-flex min-w-0 items-center gap-[5px]">
                             <Phone size={13} />
@@ -1451,6 +1505,34 @@ export default function AdminStaff({ firebaseUser, isSuperAdmin, can, onOpenAllo
                   </div>
                 </div>
               </div>
+
+              {isSuperAdmin && (
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '18px' }}>
+                  <label style={S.lbl} htmlFor="staff-work-email">Work Email (Personal Inbox)</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input
+                      id="staff-work-email"
+                      type="text"
+                      inputMode="email"
+                      autoComplete="off"
+                      spellCheck={false}
+                      placeholder="e.g. madayajetch"
+                      value={form.workEmail}
+                      onChange={(e) => setForm({ ...form, workEmail: e.target.value.replace(/\s+/g, '').toLowerCase() })}
+                      disabled={!workEmails.loaded || saving}
+                      maxLength={60}
+                      style={{ ...S.inp, flex: 1, minWidth: 0 }}
+                      aria-describedby="staff-work-email-hint"
+                    />
+                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, whiteSpace: 'nowrap' }}>@odysseyph.com</span>
+                  </div>
+                  <p id="staff-work-email-hint" role={workEmails.error ? 'alert' : undefined} style={{ color: workEmails.error ? '#e58b8b' : 'rgba(255,255,255,0.45)', fontSize: 12, margin: '8px 0 0', lineHeight: 1.4 }}>
+                    {workEmails.error
+                      ? `${workEmails.error} The work email can't be changed until this loads.`
+                      : 'Their own inbox on the Email page, which is added to their access automatically. Only they can send from it; as superadmin you can also read it. Leave blank to turn the address off. Past mail is kept.'}
+                  </p>
+                </div>
+              )}
 
               {/* ─── GRANULAR NAVIGATION & ACTION PERMISSION MANAGER ─── */}
               <div

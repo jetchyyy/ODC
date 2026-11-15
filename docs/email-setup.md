@@ -24,6 +24,18 @@ The website, the email API and inbound mail all run in one Cloudflare Worker (`w
 
 The superadmin UID in `EMAIL_ADMIN_UIDS` sees every mailbox. Give other staff the **Email** page plus the specific `email:<mailbox>` actions in **Staff Management → Page & Action Permissions**.
 
+### Personal addresses
+
+Each staff member can also have their own address, such as `madayajetch@odysseyph.com`. As superadmin, open the person in **Staff Management**, fill in **Work Email**, and save.
+
+- Only that person can send from it. It appears as **Your inbox** on their Email page, and the Email page is added to their access automatically. Ticking shared inboxes is still separate.
+- The superadmin can read every personal inbox under **Staff inboxes**, but cannot send from one. **All inboxes** shows only shared inboxes plus your own.
+- Mail goes out as `Name · OdysseyPH IT Solutions <address>`.
+- Changing the address moves the person's existing mail to the new one. The old address then falls back to `hello@`.
+- Clearing the field turns the address off. New mail goes to `hello@`, and the past mail stays readable by the superadmin. Deactivating the staff member also cuts their access.
+- Shared inbox names and role addresses (`postmaster`, `abuse`, `admin`, `info`, `privacy`, and others) can't be used. See `RESERVED_LOCALS` in `worker/src/mail.js`.
+- No Cloudflare change is needed, because the catch-all rule already delivers every address to the Worker. Personal addresses are stored in the D1 table `personal_mailboxes` (migration `0002`).
+
 ## One-time setup
 
 Run these from the repository root and sign in to Cloudflare when asked (`npx wrangler login`).

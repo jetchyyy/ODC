@@ -5,15 +5,15 @@ import { DatabaseSync } from 'node:sqlite';
 import PostalMime, { addressParser } from 'postal-mime';
 import {
   mailboxForRecipient, subjectKey, parseMessageIds, validateDraft, buildMailjetMessage, readMailjetResult,
-  resolveMailboxAccess, textToHtml, snippetOf, MAILBOX_IDS,
+  resolveMailboxAccess, textToHtml, snippetOf, MAILBOX_IDS, recipientBase, validatePersonalLocal,
 } from '../worker/src/mail.js';
-import { saveInbound, saveOutbound, listThreads, getThread, updateThread, replyHeaders, unreadCounts } from '../worker/src/store.js';
+import { saveInbound, saveOutbound, listThreads, getThread, updateThread, replyHeaders, unreadCounts, savePersonal, deactivatePersonal, activePersonal, listPersonal } from '../worker/src/store.js';
 import { findStaff } from '../worker/src/auth.js';
 
 // Minimal D1 stand-in backed by node:sqlite.
 function fakeD1() {
   const sqlite = new DatabaseSync(':memory:');
-  sqlite.exec(readFileSync(new URL('../worker/migrations/0001_email.sql', import.meta.url), 'utf8'));
+  for (const file of ['0001_email.sql', '0002_personal_mailboxes.sql']) sqlite.exec(readFileSync(new URL(`../worker/migrations/${file}`, import.meta.url), 'utf8'));
   const statement = (sql, args = []) => ({
     bind: (...next) => statement(sql, next),
     first: async () => sqlite.prepare(sql).get(...args) ?? null,
@@ -35,9 +35,9 @@ const rawEmail = ({ from = 'Maria Cruz <maria@client.ph>', to = 'sales@odysseyph
   '--b1', 'Content-Type: application/pdf', 'Content-Disposition: attachment; filename="brief.pdf"', 'Content-Transfer-Encoding: base64', '', 'JVBERi0xLjQK', '--b1--', '',
 ].filter(line => line !== null).join('\r\n');
 
-async function receive(db, files, options, now) {
+async function receive(db, files, options, now, personal = []) {
   const raw = new TextEncoder().encode(rawEmail(options));
-  return saveInbound(db, files, { mailbox: mailboxForRecipient(options?.to || 'sales@odysseyph.com', 'odysseyph.com'), parsed: await PostalMime.parse(raw), raw, envelopeFrom: 'maria@client.ph', now });
+  return saveInbound(db, files, { mailbox: mailboxForRecipient(options?.to || 'sales@odysseyph.com', 'odysseyph.com', personal), parsed: await PostalMime.parse(raw), raw, envelopeFrom: 'maria@client.ph', now });
 }
 
 test('routes recipients to mailboxes with a catch-all and refuses send-only addresses', () => {
@@ -47,6 +47,17 @@ test('routes recipients to mailboxes with a catch-all and refuses send-only addr
   assert.equal(mailboxForRecipient('noreply@odysseyph.com', 'odysseyph.com'), null);
   assert.equal(mailboxForRecipient('sales@other.com', 'odysseyph.com'), null);
   assert.deepEqual(MAILBOX_IDS, ['hello', 'sales', 'support', 'marketing', 'billing', 'dpo']);
+  // Personal addresses only receive while active; otherwise they fall into the catch-all.
+  assert.equal(mailboxForRecipient('MadayaJetch+news@odysseyph.com', 'odysseyph.com', ['madayajetch']), 'madayajetch');
+  assert.equal(recipientBase('MadayaJetch+news@odysseyph.com', 'odysseyph.com'), 'madayajetch');
+  assert.equal(recipientBase('madayajetch@other.com', 'odysseyph.com'), null);
+});
+
+test('validates personal address names', () => {
+  assert.equal(validatePersonalLocal(' Jetch.Madaya@odysseyph.com '), 'jetch.madaya');
+  assert.equal(validatePersonalLocal('m'), 'm');
+  for (const bad of ['', '.jetch', 'jetch.', 'je..tch', 'jet ch', 'jetch+1', 'a'.repeat(41)]) assert.throws(() => validatePersonalLocal(bad), /lowercase letters/);
+  for (const reserved of ['sales', 'noreply', 'all', 'postmaster', 'dpo']) assert.throws(() => validatePersonalLocal(reserved), /reserved/);
 });
 
 test('normalizes reply subjects and message id headers', () => {
@@ -63,6 +74,43 @@ test('resolves mailbox access from trusted staff data', () => {
   assert.deepEqual(resolveMailboxAccess({ uid: 'u1', adminUids, staff: { status: 'inactive', allowedTabs: ['email'], allowedActions: ['email:marketing'] } }).mailboxes, []);
   assert.deepEqual(resolveMailboxAccess({ uid: 'u1', adminUids, staff: { status: 'active', allowedTabs: ['sales'], allowedActions: ['email:sales'] } }).mailboxes, []);
   assert.equal(resolveMailboxAccess({ uid: 'u1', adminUids, staff: { status: 'active', allowedTabs: ['email'] } }).mailboxes.length, MAILBOX_IDS.length);
+
+  const personal = [
+    { local: 'mia', owner_email: 'mia@odc.com', active: 1 },
+    { local: 'root.owner', owner_email: 'root@odc.com', active: 1 },
+    { local: 'gone', owner_email: 'gone@odc.com', active: 0 },
+  ];
+  const mia = { status: 'active', allowedTabs: ['email'], allowedActions: ['email:sales'] };
+  assert.deepEqual(resolveMailboxAccess({ uid: 'u1', adminUids, staff: mia, email: 'MIA@odc.com', personal: personal.slice(0, 1) }).mailboxes, ['sales', 'mia']);
+  // A personal inbox works without any shared inbox, but never for an inactive staff record or another owner.
+  assert.deepEqual(resolveMailboxAccess({ uid: 'u1', adminUids, staff: { status: 'active', allowedTabs: [] }, email: 'mia@odc.com', personal }).mailboxes, ['mia']);
+  assert.deepEqual(resolveMailboxAccess({ uid: 'u1', adminUids, staff: { ...mia, status: 'inactive' }, email: 'mia@odc.com', personal }).mailboxes, []);
+  assert.deepEqual(resolveMailboxAccess({ uid: 'u1', adminUids, staff: mia, email: 'gone@odc.com', personal }).mailboxes, ['sales']);
+  // The superadmin can open every personal inbox, but "All inboxes" shows only shared ones plus their own.
+  const root = resolveMailboxAccess({ uid: 'root', adminUids, staff: null, email: 'root@odc.com', personal });
+  assert.deepEqual(root.mailboxes.slice(MAILBOX_IDS.length), ['mia', 'root.owner', 'gone']);
+  assert.deepEqual(root.allView, [...MAILBOX_IDS, 'root.owner']);
+});
+
+test('assigns, renames and turns off personal addresses without losing mail', async () => {
+  const db = fakeD1(), files = fakeR2();
+  await savePersonal(db, { staffId: 's1', ownerEmail: 'jetch@odc.com', name: 'Jetch', local: 'jetch', now: 1 });
+  await assert.rejects(savePersonal(db, { staffId: 's2', ownerEmail: 'mia@odc.com', name: 'Mia', local: 'jetch', now: 2 }), /another staff member/);
+  assert.equal(await activePersonal(db, 'jetch'), true);
+  const { threadId } = await receive(db, files, { to: 'jetch@odysseyph.com' }, 1000, ['jetch']);
+  assert.equal((await listThreads(db, { mailboxes: ['jetch'] })).threads.length, 1);
+
+  const renamed = await savePersonal(db, { staffId: 's1', ownerEmail: 'jetch@odc.com', name: 'Jetch Madaya', local: 'madayajetch', now: 3 });
+  assert.deepEqual(renamed, { local: 'madayajetch', staffId: 's1', ownerEmail: 'jetch@odc.com', name: 'Jetch Madaya', active: true });
+  const { thread, messages } = await getThread(db, threadId);
+  assert.equal(thread.mailbox, 'madayajetch');
+  assert.equal(messages[0].attachments.length, 1);
+  assert.equal(await activePersonal(db, 'jetch'), false);
+
+  await deactivatePersonal(db, 's1', 4);
+  assert.equal(await activePersonal(db, 'madayajetch'), false);
+  assert.equal((await listPersonal(db)).length, 1); // kept for the superadmin
+  assert.equal((await savePersonal(db, { staffId: 's1', ownerEmail: 'jetch@odc.com', name: 'Jetch Madaya', local: 'madayajetch', now: 5 })).active, true);
 });
 
 test('staff lookup refuses missing or duplicate records', async () => {

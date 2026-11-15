@@ -39,12 +39,38 @@ export function splitAddress(address) {
 }
 
 /** Which inbox receives mail for an envelope recipient. `null` means refuse it. */
-export function mailboxForRecipient(recipient, domain) {
+export function mailboxForRecipient(recipient, domain, personal = []) {
   const { local, domain: recipientDomain } = splitAddress(recipient);
   if (!local || recipientDomain !== normalizeEmail(domain)) return null;
   const base = local.split('+')[0];
   if (SEND_ONLY_LOCAL_PARTS.includes(base)) return null;
-  return MAILBOX_IDS.includes(base) ? base : DEFAULT_MAILBOX; // catch-all lands in the main inbox
+  if (MAILBOX_IDS.includes(base) || personal.includes(base)) return base;
+  return DEFAULT_MAILBOX; // catch-all lands in the main inbox
+}
+
+/** The local part an inbound address is looked up by (plus tags removed), or null for other domains. */
+export function recipientBase(recipient, domain) {
+  const { local, domain: recipientDomain } = splitAddress(recipient);
+  if (!local || recipientDomain !== normalizeEmail(domain)) return null;
+  return local.split('+')[0];
+}
+
+// Addresses a staff member cannot claim: shared inboxes, send-only identities, role addresses
+// that mail providers expect, and `all` (the API's name for the combined view).
+export const RESERVED_LOCALS = new Set([
+  ...MAILBOX_IDS, ...SEND_ONLY_LOCAL_PARTS, 'all', 'admin', 'administrator', 'root', 'postmaster', 'abuse', 'hostmaster',
+  'webmaster', 'security', 'info', 'privacy', 'contact', 'mailer-daemon', 'staff', 'team', 'office', 'accounts', 'hr',
+]);
+const PERSONAL_LOCAL = /^[a-z0-9](?:[a-z0-9._-]{0,38}[a-z0-9])?$/;
+
+/** Normalize and check a personal address's local part ("madayajetch" in madayajetch@odysseyph.com). */
+export function validatePersonalLocal(value) {
+  const local = normalizeEmail(value).replace(/@.*$/, '');
+  if (!PERSONAL_LOCAL.test(local) || local.includes('..')) {
+    throw new MailError('Use 1–40 lowercase letters, numbers, dots, dashes or underscores, starting and ending with a letter or number.');
+  }
+  if (RESERVED_LOCALS.has(local)) throw new MailError(`${local}@ is reserved. Choose another address.`, 409);
+  return local;
 }
 
 export const mailboxAddress = (mailbox, domain) => `${mailbox}@${normalizeEmail(domain)}`;
@@ -140,7 +166,7 @@ export const safeContentType = type => SAFE_TYPE.test(String(type || '').toLower
 export function validateDraft(input, allowedMailboxes, parse) {
   if (!input || typeof input !== 'object') throw new MailError('Invalid email.');
   const mailbox = String(input.mailbox || '');
-  if (!MAILBOX_IDS.includes(mailbox)) throw new MailError('Choose a mailbox to send from.');
+  if (!mailbox) throw new MailError('Choose a mailbox to send from.');
   if (!allowedMailboxes.includes(mailbox)) throw new MailError('You cannot send from this mailbox.', 403);
   const to = cleanRecipients(input.to, parse);
   const cc = cleanRecipients(input.cc, parse);
@@ -200,15 +226,24 @@ export function readMailjetResult(status, body) {
   return { ok: false, error: detail };
 }
 
-/** Mailbox access from server-trusted data. Admin UIDs get every mailbox. */
-export function resolveMailboxAccess({ uid, adminUids, staff }) {
-  if (adminUids.includes(uid)) return { mailboxes: [...MAILBOX_IDS], admin: true };
-  if (!staff || staff.status !== 'active') return { mailboxes: [], admin: false };
+/**
+ * Mailbox access from server-trusted data. `personal` holds personal_mailboxes rows.
+ * Admin UIDs open every mailbox; everyone's combined view (`allView`) is the shared inboxes they hold plus their own.
+ */
+export function resolveMailboxAccess({ uid, adminUids, staff, email = '', personal = [] }) {
+  const owner = normalizeEmail(email);
+  const own = personal.filter(p => p.active && owner && normalizeEmail(p.owner_email) === owner).map(p => p.local);
+  if (adminUids.includes(uid)) {
+    return { mailboxes: [...MAILBOX_IDS, ...personal.map(p => p.local)], allView: [...MAILBOX_IDS, ...own], admin: true };
+  }
+  const none = { mailboxes: [], allView: [], admin: false };
+  if (!staff || staff.status !== 'active') return none;
   const tabs = Array.isArray(staff.allowedTabs) ? staff.allowedTabs : [];
-  if (!tabs.includes('email')) return { mailboxes: [], admin: false };
   // Mirrors the dashboard: a staff record without an explicit action list gets every action of its tabs.
   const actions = Array.isArray(staff.allowedActions) ? staff.allowedActions : MAILBOX_IDS.map(id => `email:${id}`);
-  return { mailboxes: MAILBOX_IDS.filter(id => actions.includes(`email:${id}`)), admin: false };
+  const shared = tabs.includes('email') ? MAILBOX_IDS.filter(id => actions.includes(`email:${id}`)) : [];
+  const mailboxes = [...shared, ...own];
+  return { mailboxes, allView: mailboxes, admin: false };
 }
 
 /** Lowercased, space-delimited participant list for LIKE matching in SQL. */

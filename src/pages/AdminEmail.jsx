@@ -22,6 +22,8 @@ const formatWhen = ms => {
 const formatFull = ms => new Date(ms).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 const formatSize = bytes => bytes < 1024 ? `${bytes} B` : bytes < 1048576 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1048576).toFixed(1)} MB`;
 const person = (email, name) => name ? `${name} <${email}>` : email;
+// Shared inboxes, plus your own personal one while its address is on.
+const canSendFrom = m => Boolean(m) && (!m.personal || (m.own && m.active));
 const listPeople = list => (list || []).map(a => a.name || a.email).join(', ');
 
 /** Sender HTML is untrusted: no scripts, same-origin only so we can size the frame, remote images opt-in. */
@@ -117,7 +119,7 @@ function Composer({ mailboxes, initial, quote, onSent, onCancel, title }) {
       {error && <p className="email-error" role="alert">{error}</p>}
       <label className="email-field"><span>From</span>
         <select value={draft.mailbox} onChange={set('mailbox')} disabled={isReply}>
-          {mailboxes.map(m => <option key={m.id} value={m.id}>{m.label} · {m.address}</option>)}
+          {mailboxes.filter(m => canSendFrom(m) || m.id === draft.mailbox).map(m => <option key={m.id} value={m.id}>{m.personal ? 'Personal' : m.label} · {m.address}</option>)}
         </select>
       </label>
       <label className="email-field"><span>To</span><input type="text" value={draft.to} onChange={set('to')} placeholder="name@example.com, another@example.com" required autoComplete="off" /></label>
@@ -168,6 +170,7 @@ function ThreadView({ id, mailboxes, domain, onBack, onChanged }) {
   if (!data) return <div className="email-thread"><div className="email-skeleton" /></div>;
   const { thread, messages } = data;
   const mailbox = mailboxes.find(m => m.id === thread.mailbox);
+  const canReply = canSendFrom(mailbox);
   const lastInbound = [...messages].reverse().find(m => m.direction === 'in');
   const last = messages[messages.length - 1];
   const ours = address => address.endsWith(`@${domain}`);
@@ -210,7 +213,9 @@ function ThreadView({ id, mailboxes, domain, onBack, onChanged }) {
       <div className="email-messages">
         {messages.map((message, i) => <Message key={message.id} message={message} defaultOpen={i === messages.length - 1 || !message.read} />)}
       </div>
-      {replying ? (
+      {!canReply ? (
+        <p className="email-notice">{mailbox?.personal && !mailbox.own ? 'This is a staff member’s personal inbox. You can read it, but only they can reply from it.' : 'Replies from this address are turned off.'}</p>
+      ) : replying ? (
         <Composer key={replying.key} title="Reply" mailboxes={mailboxes} initial={replying.initial} quote={replying.quote}
           onCancel={() => setReplying(null)} onSent={() => { setReplying(null); load(); onChanged({ id, refresh: true }); }} />
       ) : (
@@ -267,7 +272,7 @@ export default function AdminEmail() {
     return (
       <section className="email-module">
         <p className="email-eyebrow">Email</p>
-        <h2>Shared inboxes</h2>
+        <h2>Inboxes</h2>
         <p className="email-error" role="alert">{contextError}</p>
         <button type="button" onClick={loadContext}><RefreshCw size={15} aria-hidden="true" /> Retry</button>
       </section>
@@ -276,18 +281,25 @@ export default function AdminEmail() {
   if (!context) return <section className="email-module"><div className="email-skeleton" /></section>;
 
   const mailboxes = context.mailboxes;
-  const totalUnread = mailboxes.reduce((n, m) => n + m.unread, 0);
-  const startCompose = () => setComposing({ key: Date.now(), initial: { mailbox: mailbox !== 'all' ? mailbox : mailboxes[0].id, to: '', cc: '', bcc: '', subject: '', text: '' } });
-  const mailboxLabel = id => mailboxes.find(m => m.id === id)?.label || id;
+  const sendable = mailboxes.filter(canSendFrom);
+  const current = mailboxes.find(m => m.id === mailbox);
+  const startCompose = () => setComposing({ key: Date.now(), initial: { mailbox: canSendFrom(current) ? current.id : (sendable.find(m => m.own) || sendable[0]).id, to: '', cc: '', bcc: '', subject: '', text: '' } });
+  const groups = [
+    { label: 'Your inbox', items: mailboxes.filter(m => m.personal && m.own) },
+    { label: 'Shared', items: mailboxes.filter(m => !m.personal) },
+    { label: 'Staff inboxes', items: mailboxes.filter(m => m.personal && !m.own) },
+  ].filter(g => g.items.length);
+  const allUnread = mailboxes.filter(m => !m.personal || m.own).reduce((n, m) => n + m.unread, 0);
+  const mailboxLabel = id => { const m = mailboxes.find(x => x.id === id); return m?.own ? 'Personal' : m?.label || id; };
 
   return (
     <section className="email-module">
       <header className="email-heading">
         <div>
           <p className="email-eyebrow">Email · {context.domain}</p>
-          <h2>Shared inboxes</h2>
+          <h2>Inboxes</h2>
         </div>
-        <button type="button" className="email-primary email-heading-action" onClick={startCompose} disabled={!context.sendingEnabled} title={context.sendingEnabled ? '' : 'Mailjet keys are not configured on the Worker yet'}>
+        <button type="button" className="email-primary email-heading-action" onClick={startCompose} disabled={!context.sendingEnabled || !sendable.length} title={context.sendingEnabled ? '' : 'Mailjet keys are not configured on the Worker yet'}>
           <PenSquare size={16} aria-hidden="true" /> Compose
         </button>
       </header>
@@ -298,12 +310,19 @@ export default function AdminEmail() {
         <nav className="email-sidebar" aria-label="Mailboxes">
           <ul>
             <li><button type="button" aria-current={mailbox === 'all' || undefined} onClick={() => { setMailbox('all'); setSelected(null); }}>
-              <Mail size={15} aria-hidden="true" /><span>All inboxes</span>{totalUnread > 0 && <b>{totalUnread}</b>}</button></li>
-            {mailboxes.map(m => (
-              <li key={m.id}><button type="button" aria-current={mailbox === m.id || undefined} onClick={() => { setMailbox(m.id); setSelected(null); }} title={m.description}>
-                <span className="email-dot" data-mailbox={m.id} aria-hidden="true" /><span>{m.address}</span>{m.unread > 0 && <b>{m.unread}</b>}</button></li>
-            ))}
+              <Mail size={15} aria-hidden="true" /><span>All inboxes</span>{allUnread > 0 && <b>{allUnread}</b>}</button></li>
           </ul>
+          {groups.map(group => (
+            <div key={group.label} className="email-group">
+              <p className="email-group-label">{group.label}</p>
+              <ul>
+                {group.items.map(m => (
+                  <li key={m.id}><button type="button" aria-current={mailbox === m.id || undefined} onClick={() => { setMailbox(m.id); setSelected(null); }} title={m.description}>
+                    <span className="email-dot" data-mailbox={m.personal ? 'personal' : m.id} aria-hidden="true" /><span>{m.personal && !m.own ? `${m.label} · ${m.address}` : m.address}</span>{m.unread > 0 && <b>{m.unread}</b>}</button></li>
+                ))}
+              </ul>
+            </div>
+          ))}
           <div className="email-folders" role="group" aria-label="Folder">
             {FOLDERS.map(({ id, label, icon }) => (
               <button key={id} type="button" aria-pressed={folder === id} onClick={() => { setFolder(id); setSelected(null); }}>{icon} {label}</button>
@@ -331,7 +350,7 @@ export default function AdminEmail() {
                     </span>
                     <span className="email-thread-subject">{t.unreadCount > 0 && <span className="email-unread-dot" aria-label="Unread" />}{t.subject}{t.messageCount > 1 && <small> ({t.messageCount})</small>}</span>
                     <span className="email-thread-snippet">{t.hasAttachments && <Paperclip size={12} aria-label="Has attachments" />} {t.snippet}</span>
-                    {mailbox === 'all' && <span className="email-tag" data-mailbox={t.mailbox}>{mailboxLabel(t.mailbox)}</span>}
+                    {mailbox === 'all' && <span className="email-tag" data-mailbox={mailboxes.find(m => m.id === t.mailbox)?.personal ? 'personal' : t.mailbox}>{mailboxLabel(t.mailbox)}</span>}
                   </button>
                 </li>
               ))}

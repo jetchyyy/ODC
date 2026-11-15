@@ -33,6 +33,11 @@ export const getThread = async id => (await call(`/threads/${id}`)).json();
 export const updateThread = async (id, changes) => (await call(`/threads/${id}`, { method: 'PATCH', body: changes })).json();
 export const sendEmail = async draft => (await call('/send', { method: 'POST', body: draft })).json();
 
+// Personal addresses (superadmin only). Keyed by the Firestore staff document id.
+export const listPersonalMailboxes = async () => (await call('/personal')).json();
+export const setPersonalMailbox = async (staffId, { local, ownerEmail, name }) => (await call(`/personal/${encodeURIComponent(staffId)}`, { method: 'PUT', body: { local, ownerEmail, name } })).json();
+export const turnOffPersonalMailbox = async staffId => (await call(`/personal/${encodeURIComponent(staffId)}`, { method: 'DELETE' })).json();
+
 export async function downloadAttachment({ id, filename }) {
   const blob = await (await call(`/attachments/${id}`)).blob();
   const url = URL.createObjectURL(blob);

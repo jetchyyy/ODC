@@ -34,13 +34,15 @@
 .email-sidebar li button{width:100%;justify-content:flex-start;border-color:transparent;background:none;font-size:12.5px;text-align:left}
 .email-sidebar li button span:not(.email-dot){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .email-sidebar li button[aria-current]{background:#93c5fd14;color:var(--email-accent)}
+.email-group{display:grid;gap:4px}
+.email-group-label{margin:0;padding:0 10px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--email-muted)}
 .email-sidebar b{font-size:10px;padding:0 6px;border-radius:5px;background:#93c5fd22;color:var(--email-accent);font-variant-numeric:tabular-nums}
 .email-folders{display:grid;gap:4px;padding-top:12px;border-top:1px solid var(--email-line)}
 .email-folders button{justify-content:flex-start;border-color:transparent!important;background:none!important}
 .email-folders button[aria-pressed=true]{color:var(--email-accent);background:#93c5fd10!important}
 .email-dot,.email-tag{--tone:#93c5fd}
 .email-dot{width:8px;height:8px;border-radius:50%;background:var(--tone);flex-shrink:0}
-[data-mailbox=sales]{--tone:#7dd3fc}[data-mailbox=support]{--tone:#5eead4}[data-mailbox=marketing]{--tone:#f0abfc}[data-mailbox=billing]{--tone:#f5c97a}[data-mailbox=hello]{--tone:#93c5fd}
+[data-mailbox=sales]{--tone:#7dd3fc}[data-mailbox=support]{--tone:#5eead4}[data-mailbox=marketing]{--tone:#f0abfc}[data-mailbox=billing]{--tone:#f5c97a}[data-mailbox=hello]{--tone:#93c5fd}[data-mailbox=dpo]{--tone:#fca5a5}[data-mailbox=personal]{--tone:#d9a66a}
 
 .email-list{border-right:1px solid var(--email-line);display:flex;flex-direction:column;min-width:0;max-height:820px}
 .email-search{position:relative;display:flex;align-items:center;gap:4px;padding:10px;border-bottom:1px solid var(--email-line)}
@@ -99,6 +101,8 @@
   .email-sidebar{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--email-line)}
   .email-sidebar ul{display:flex;flex-wrap:wrap}
   .email-sidebar li button{width:auto}
+  .email-group{display:contents}
+  .email-group-label{display:none}
   .email-folders{display:flex;border-top:0;padding-top:0;margin-left:auto}
 }
 @media (max-width:760px){

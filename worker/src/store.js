@@ -1,6 +1,6 @@
 // D1 + R2 persistence. `db` is a D1 binding (prepare/bind/first/all/run/batch); `files` is an R2 binding.
 import {
-  LIMITS, MAILBOX_IDS, bareMessageId, participantKey, parseMessageIds, safeContentType, safeFilename,
+  LIMITS, MailError, bareMessageId, participantKey, parseMessageIds, safeContentType, safeFilename,
   snippetOf, subjectKey, hasReplyPrefix, normalizeEmail, mailboxAddress,
 } from './mail.js';
 
@@ -125,7 +125,7 @@ const threadRow = t => ({
 });
 
 export async function listThreads(db, { mailboxes, folder = 'inbox', q = '', before = null, limit = 30 }) {
-  const scope = mailboxes.filter(m => MAILBOX_IDS.includes(m));
+  const scope = [...new Set(mailboxes.filter(m => typeof m === 'string' && m))]; // callers pass the user's trusted list
   if (!scope.length) return { threads: [], nextBefore: null };
   const where = [`mailbox IN (${scope.map(() => '?').join(',')})`];
   const args = [...scope];
@@ -180,3 +180,38 @@ export async function updateThread(db, id, { read, archived }) {
 }
 
 export const getAttachment = (db, id) => db.prepare('SELECT * FROM email_attachments WHERE id = ?').bind(id).first();
+
+// Personal inboxes. A row's `local` doubles as the mailbox id stored on threads, messages and attachments.
+const personalRow = p => ({ local: p.local, staffId: p.staff_id, ownerEmail: p.owner_email, name: p.name, active: !!p.active });
+
+export const listPersonal = async db => (await db.prepare('SELECT * FROM personal_mailboxes ORDER BY local').all()).results;
+export const activePersonal = async (db, local) => Boolean(await db.prepare('SELECT 1 AS hit FROM personal_mailboxes WHERE local = ? AND active = 1').bind(local).first());
+export const publicPersonal = rows => rows.map(personalRow);
+
+/**
+ * Give a staff member a personal address, or rename theirs. Renaming moves the old address's mail along with it,
+ * so the owner keeps their history. Returns the saved row.
+ */
+export async function savePersonal(db, { staffId, ownerEmail, name, local, now = Date.now() }) {
+  const taken = await db.prepare('SELECT staff_id FROM personal_mailboxes WHERE local = ?').bind(local).first();
+  if (taken && taken.staff_id !== staffId) throw new MailError(`${local}@ already belongs to another staff member.`, 409);
+  const current = await db.prepare('SELECT local FROM personal_mailboxes WHERE staff_id = ?').bind(staffId).first();
+  if (current && current.local !== local) {
+    const move = table => db.prepare(`UPDATE ${table} SET mailbox = ? WHERE mailbox = ?`).bind(local, current.local);
+    await db.batch([
+      move('email_threads'), move('email_messages'), move('email_attachments'),
+      db.prepare('UPDATE personal_mailboxes SET local = ?, owner_email = ?, name = ?, active = 1, updated_at = ? WHERE staff_id = ?').bind(local, ownerEmail, name, now, staffId),
+    ]);
+  } else if (current) {
+    await db.prepare('UPDATE personal_mailboxes SET owner_email = ?, name = ?, active = 1, updated_at = ? WHERE staff_id = ?').bind(ownerEmail, name, now, staffId).run();
+  } else {
+    await db.prepare('INSERT INTO personal_mailboxes (local, staff_id, owner_email, name, active, created_at, updated_at) VALUES (?, ?, ?, ?, 1, ?, ?)')
+      .bind(local, staffId, ownerEmail, name, now, now).run();
+  }
+  return personalRow(await db.prepare('SELECT * FROM personal_mailboxes WHERE staff_id = ?').bind(staffId).first());
+}
+
+/** Stop an address receiving mail. Its stored mail stays, visible to the superadmin. */
+export async function deactivatePersonal(db, staffId, now = Date.now()) {
+  await db.prepare('UPDATE personal_mailboxes SET active = 0, updated_at = ? WHERE staff_id = ?').bind(now, staffId).run();
+}

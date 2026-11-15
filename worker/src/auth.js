@@ -1,6 +1,7 @@
 // Firebase ID token verification and staff lookup for the email API.
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { MailError, normalizeEmail, resolveMailboxAccess } from './mail.js';
+import { listPersonal } from './store.js';
 
 const FIREBASE_JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'));
 
@@ -44,8 +45,16 @@ export async function findStaff(user, projectId, fetcher = fetch) {
 export async function authorize(request, env, fetcher = fetch) {
   const user = await verifyFirebaseToken(request, env.FIREBASE_PROJECT_ID);
   const adminUids = String(env.EMAIL_ADMIN_UIDS || '').split(',').map(v => v.trim()).filter(Boolean);
-  const staff = adminUids.includes(user.uid) ? null : await findStaff(user, env.FIREBASE_PROJECT_ID, fetcher);
-  const access = resolveMailboxAccess({ uid: user.uid, adminUids, staff });
+  const admin = adminUids.includes(user.uid);
+  const [staff, personal] = await Promise.all([
+    admin ? null : findStaff(user, env.FIREBASE_PROJECT_ID, fetcher),
+    admin ? listPersonal(env.EMAIL_DB) : ownPersonal(env.EMAIL_DB, user.email),
+  ]);
+  const access = resolveMailboxAccess({ uid: user.uid, adminUids, staff, email: user.email, personal });
   if (!access.mailboxes.length) throw new MailError('You do not have access to any mailbox.', 403);
-  return { ...user, ...access };
+  return { ...user, ...access, personal };
 }
+
+const ownPersonal = async (db, email) => email
+  ? (await db.prepare('SELECT * FROM personal_mailboxes WHERE owner_email = ? AND active = 1').bind(email).all()).results
+  : [];
