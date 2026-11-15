@@ -6,6 +6,7 @@ export const MAILBOXES = [
   { id: 'support', label: 'Support', description: 'Client tickets and maintenance' },
   { id: 'marketing', label: 'Marketing', description: 'Campaigns, partners and media' },
   { id: 'billing', label: 'Billing', description: 'Invoices, receipts and payments' },
+  { id: 'dpo', label: 'DPO', description: 'Data privacy requests and concerns' },
 ];
 export const MAILBOX_IDS = MAILBOXES.map(m => m.id);
 export const DEFAULT_MAILBOX = 'hello';

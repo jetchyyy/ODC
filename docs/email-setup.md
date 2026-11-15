@@ -19,6 +19,7 @@ The website, the email API and inbound mail all run in one Cloudflare Worker (`w
 | `support@` | Tickets, maintenance |
 | `marketing@` | Marketing |
 | `billing@` | Invoices, receipts, payments |
+| `dpo@` | Data privacy requests (Data Protection Officer) |
 | `noreply@` | Send-only. Incoming mail is refused |
 
 The superadmin UID in `EMAIL_ADMIN_UIDS` sees every mailbox. Give other staff the **Email** page plus the specific `email:<mailbox>` actions in **Staff Management → Page & Action Permissions**.

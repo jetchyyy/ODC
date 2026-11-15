@@ -46,7 +46,7 @@ test('routes recipients to mailboxes with a catch-all and refuses send-only addr
   assert.equal(mailboxForRecipient('jetch@odysseyph.com', 'odysseyph.com'), 'hello');
   assert.equal(mailboxForRecipient('noreply@odysseyph.com', 'odysseyph.com'), null);
   assert.equal(mailboxForRecipient('sales@other.com', 'odysseyph.com'), null);
-  assert.deepEqual(MAILBOX_IDS, ['hello', 'sales', 'support', 'marketing', 'billing']);
+  assert.deepEqual(MAILBOX_IDS, ['hello', 'sales', 'support', 'marketing', 'billing', 'dpo']);
 });
 
 test('normalizes reply subjects and message id headers', () => {
@@ -58,11 +58,11 @@ test('normalizes reply subjects and message id headers', () => {
 
 test('resolves mailbox access from trusted staff data', () => {
   const adminUids = ['root'];
-  assert.equal(resolveMailboxAccess({ uid: 'root', adminUids, staff: null }).mailboxes.length, 5);
+  assert.equal(resolveMailboxAccess({ uid: 'root', adminUids, staff: null }).mailboxes.length, MAILBOX_IDS.length);
   assert.deepEqual(resolveMailboxAccess({ uid: 'u1', adminUids, staff: { status: 'active', allowedTabs: ['email'], allowedActions: ['email:marketing'] } }).mailboxes, ['marketing']);
   assert.deepEqual(resolveMailboxAccess({ uid: 'u1', adminUids, staff: { status: 'inactive', allowedTabs: ['email'], allowedActions: ['email:marketing'] } }).mailboxes, []);
   assert.deepEqual(resolveMailboxAccess({ uid: 'u1', adminUids, staff: { status: 'active', allowedTabs: ['sales'], allowedActions: ['email:sales'] } }).mailboxes, []);
-  assert.equal(resolveMailboxAccess({ uid: 'u1', adminUids, staff: { status: 'active', allowedTabs: ['email'] } }).mailboxes.length, 5);
+  assert.equal(resolveMailboxAccess({ uid: 'u1', adminUids, staff: { status: 'active', allowedTabs: ['email'] } }).mailboxes.length, MAILBOX_IDS.length);
 });
 
 test('staff lookup refuses missing or duplicate records', async () => {

@@ -41,6 +41,7 @@ export const ALL_ADMIN_NAVIGATIONS = [
       { id: 'email:support', label: 'support@ inbox', desc: 'Read and send as support@odysseyph.com' },
       { id: 'email:marketing', label: 'marketing@ inbox', desc: 'Read and send as marketing@odysseyph.com' },
       { id: 'email:billing', label: 'billing@ inbox', desc: 'Read and send as billing@odysseyph.com' },
+      { id: 'email:dpo', label: 'dpo@ inbox', desc: 'Read and send as dpo@odysseyph.com' },
     ],
   },
   {
