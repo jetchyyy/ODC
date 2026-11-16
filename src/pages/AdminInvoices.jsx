@@ -976,7 +976,7 @@ export default function AdminInvoices({ firebaseUser, isSuperAdmin, can, initial
       const matchSearch = (inv.billTo || '').toLowerCase().includes(invoiceSearch.toLowerCase()) ||
         (inv.project || '').toLowerCase().includes(invoiceSearch.toLowerCase()) ||
         (inv.invoiceNumber || '').toLowerCase().includes(invoiceSearch.toLowerCase());
-      const matchStat = invoiceStatusFilter === 'All' || inv.status === invoiceStatusFilter;
+      const matchStat = invoiceStatusFilter === 'All' || (invoiceStatusFilter === 'unpaid' ? inv.status !== 'paid' : inv.status === invoiceStatusFilter);
 
       let matchDate = true;
       if (globalMonthFilter !== 'All') {
@@ -1363,7 +1363,7 @@ export default function AdminInvoices({ firebaseUser, isSuperAdmin, can, initial
                 <select style={{ ...S.inp, width: 'auto', background: 'rgba(0,0,0,0.2)' }} value={invoiceStatusFilter} onChange={e => setInvoiceStatusFilter(e.target.value)}>
                   <option value="All" style={{ background: '#0f1218', color: '#fff' }}>All Statuses</option>
                   <option value="paid" style={{ background: '#0f1218', color: '#fff' }}>Paid</option>
-                  <option value="pending" style={{ background: '#0f1218', color: '#fff' }}>Unpaid</option>
+                  <option value="unpaid" style={{ background: '#0f1218', color: '#fff' }}>Unpaid</option>
                 </select>
                 <select style={{ ...S.inp, width: 'auto', background: 'rgba(0,0,0,0.2)' }} value={invoiceDateFilter} onChange={e => setInvoiceDateFilter(e.target.value)}>
                   <option value="All" style={{ background: '#0f1218', color: '#fff' }}>All Time</option>
