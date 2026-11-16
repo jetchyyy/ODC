@@ -4,10 +4,13 @@ import {
   MEETING_PREFIX,
   MEETING_TYPES,
   SIGNER_KINDS,
+  MAX_SIGNERS,
   controlMonthOf,
   formatControlNumber,
   meetingMinutesLink,
   emptyMeetingSigners,
+  appendSignerSlot,
+  saveFramePng,
   parseMeetingMinutesText,
   looksLikeDraftedMinutes,
   markdownToHtml,
@@ -208,4 +211,22 @@ test('buildMeetingMinutesHtml renders Brand Bible shell, single-line header, Tip
   // Print & screen rules
   assert.match(html, /@page :first\{margin-top:0;margin-bottom:12mm\}/);
   assert.match(html, /@media screen and \(max-width:840px\)\{\.pg\{width:816px/);
+});
+
+test('appendSignerSlot enforces MAX_SIGNERS cap of 12 without adding excess slots', () => {
+  assert.strictEqual(MAX_SIGNERS, 12);
+  let signers = Array.from({ length: 11 }, (_, idx) => ({ id: `s${idx + 1}`, kind: 'acknowledger', name: '', title: 'Attendee' }));
+  signers = appendSignerSlot(signers, { id: 's12', kind: 'acknowledger', name: '', title: 'Attendee' });
+  assert.strictEqual(signers.length, 12);
+  const capped = appendSignerSlot(signers, { id: 's13', kind: 'acknowledger', name: '', title: 'Attendee' });
+  assert.strictEqual(capped.length, 12);
+});
+
+test('saveFramePng safely ignores null or unmounted frame instances without throwing', async () => {
+  assert.strictEqual(await saveFramePng(null, 'MOM-2026-11-001.png'), false);
+  assert.strictEqual(await saveFramePng({}, 'MOM-2026-11-001.png'), false);
+  let saved = '';
+  const ok = await saveFramePng({ savePng: async fn => { saved = fn; } }, 'MOM-2026-11-001.png');
+  assert.strictEqual(ok, true);
+  assert.strictEqual(saved, 'MOM-2026-11-001.png');
 });

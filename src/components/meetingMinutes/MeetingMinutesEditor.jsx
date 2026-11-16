@@ -10,6 +10,7 @@ import {
   AlignJustify, Eraser, Wand2, ClipboardCopy,
 } from 'lucide-react';
 import { BRAND_CO } from '../../utils/brandDocument';
+import { copyTextToClipboard } from '../../utils/billingStatementDocument';
 import {
   AI_MEETING_PROMPT, SIGNER_KINDS, MEETING_TYPES,
   parseMeetingMinutesText, markdownToHtml, looksLikeDraftedMinutes,
@@ -216,11 +217,11 @@ export default function MeetingMinutesEditor({ form, controlNumber, initialConte
     editorRef.current = editor;
   }, [editor]);
 
-  const copyPrompt = () => {
-    navigator.clipboard.writeText(AI_MEETING_PROMPT).then(() => {
+  const copyPrompt = async () => {
+    if (await copyTextToClipboard(AI_MEETING_PROMPT)) {
       setCopiedPrompt(true);
       setTimeout(() => setCopiedPrompt(false), 2000);
-    });
+    }
   };
 
   const applyPaste = () => {

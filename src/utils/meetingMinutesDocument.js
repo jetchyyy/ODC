@@ -25,10 +25,23 @@ export const SIGNER_KINDS = {
   acknowledger: 'Acknowledged by',
 };
 
+export const MAX_SIGNERS = 12;
+
 export const emptyMeetingSigners = () => ({
   s1: { kind: 'prepared', name: '', title: 'Minutes Secretary', order: 1 },
   s2: { kind: 'approved', name: BRAND_CO.approvedBy, title: 'Founder', order: 2 },
 });
+
+export function appendSignerSlot(signers = [], slot) {
+  if (!Array.isArray(signers) || signers.length >= MAX_SIGNERS) return signers;
+  return [...signers, slot];
+}
+
+export async function saveFramePng(frameInstance, filename) {
+  if (typeof frameInstance?.savePng !== 'function') return false;
+  await frameInstance.savePng(filename);
+  return true;
+}
 
 /* ─── AI Prompt & Paste Parsing ─── */
 
@@ -600,3 +613,4 @@ export function buildMeetingMinutesHtml(minutes, signatures = {}, options = {}) 
     .replace('</head>', '<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet"></head>')
     .replace(/<title>.*?<\/title>/, `<title>${esc(number)} — ${esc(m.title || 'Minutes of Meeting')}</title>`);
 }
+

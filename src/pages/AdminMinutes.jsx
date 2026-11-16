@@ -9,8 +9,10 @@ import MeetingMinutesFrame from '../components/meetingMinutes/MeetingMinutesFram
 import MeetingMinutesEditor from '../components/meetingMinutes/MeetingMinutesEditor';
 import {
   emptyMeetingSigners, meetingMinutesLink, SIGNER_KINDS, MEETING_TYPES, editorContentOf,
+  MAX_SIGNERS, appendSignerSlot, saveFramePng,
 } from '../utils/meetingMinutesDocument';
 import { BRAND_CO, longDate } from '../utils/brandDocument';
+import { copyTextToClipboard } from '../utils/billingStatementDocument';
 import {
   subscribeMeetingMinutes, subscribeMeetingMinutesDoc, subscribeMeetingSignatures,
   createMeetingMinutes, updateMeetingMinutes, issueMeetingMinutes, revokeMeetingMinutes,
@@ -67,7 +69,7 @@ function mergeParsedIntoForm(form, parsed) {
   (parsed.prepared || []).forEach((p, idx) => extraSigners.push({ id: idx === 0 ? 's1' : newSlotId(), kind: 'prepared', name: p.name, title: p.title || 'Minutes Secretary' }));
   (parsed.approved || []).forEach((p, idx) => extraSigners.push({ id: idx === 0 ? 's2' : newSlotId(), kind: 'approved', name: p.name, title: p.title || 'Founder' }));
   (parsed.acknowledgers || []).forEach(p => extraSigners.push({ id: newSlotId(), kind: 'acknowledger', name: p.name, title: p.title || 'Attendee' }));
-  if (extraSigners.length) next.signers = extraSigners;
+  if (extraSigners.length) next.signers = extraSigners.slice(0, MAX_SIGNERS);
 
   return next;
 }
@@ -98,7 +100,7 @@ function Editor({ user, minutes, onClose, onSaved }) {
   const addAcknowledger = () => {
     setForm(f => ({
       ...f,
-      signers: [...f.signers, { id: newSlotId(), kind: 'acknowledger', name: '', title: 'Attendee / Client' }],
+      signers: appendSignerSlot(f.signers, { id: newSlotId(), kind: 'acknowledger', name: '', title: 'Attendee / Client' }),
     }));
   };
 
@@ -177,7 +179,7 @@ function Editor({ user, minutes, onClose, onSaved }) {
             </div>
           ))}
 
-          <button type="button" className="mom-add-btn" onClick={addAcknowledger}>
+          <button type="button" className="mom-add-btn" disabled={(form.signers || []).length >= MAX_SIGNERS} onClick={addAcknowledger}>
             <UserPlus size={14} /> Add attendee / client signer
           </button>
 
@@ -233,11 +235,11 @@ function Detail({ user, id, onBack, onEdit }) {
     }
   };
 
-  const copy = (text, key) => {
-    navigator.clipboard.writeText(text).then(() => {
+  const copy = async (text, key) => {
+    if (await copyTextToClipboard(text)) {
       setCopied(key);
       setTimeout(() => setCopied(''), 2000);
-    });
+    }
   };
 
   const issue = async () => {
@@ -307,7 +309,7 @@ function Detail({ user, id, onBack, onEdit }) {
             type="button"
             loading={busy === 'png'}
             loadingLabel="Rendering…"
-            onClick={() => run('png', () => frame.current.savePng(`${minutes.controlNumber}.png`))}
+            onClick={() => run('png', () => saveFramePng(frame.current, `${minutes.controlNumber}.png`))}
           >
             <ImageDown size={14} /> Save as PNG
           </LoadingButton>
@@ -605,3 +607,4 @@ export default function AdminMinutes({ firebaseUser, can }) {
     </div>
   );
 }
+

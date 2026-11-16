@@ -3,8 +3,9 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { Printer, ImageDown, Link2, Check, PenLine, ShieldCheck } from 'lucide-react';
 import LoadingButton from '../components/ui/LoadingButton';
 import MeetingMinutesFrame from '../components/meetingMinutes/MeetingMinutesFrame';
-import { SIGNER_KINDS, MEETING_TYPES } from '../utils/meetingMinutesDocument';
+import { SIGNER_KINDS, MEETING_TYPES, saveFramePng } from '../utils/meetingMinutesDocument';
 import { longDate } from '../utils/brandDocument';
+import { copyTextToClipboard } from '../utils/billingStatementDocument';
 import {
   subscribeMeetingMinutesDoc, subscribeMeetingSignatures,
   signMeetingMinutes, normalizeSignerName,
@@ -135,11 +136,11 @@ export default function MeetingMinutesPage() {
     );
   };
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(window.location.href.split('?')[0]).then(() => {
+  const copyLink = async () => {
+    if (await copyTextToClipboard(window.location.href.split('?')[0])) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    });
+    }
   };
 
   return (
@@ -164,7 +165,7 @@ export default function MeetingMinutesPage() {
             type="button"
             loading={busy === 'png'}
             loadingLabel="Rendering…"
-            onClick={() => run('png', () => frame.current.savePng(`${minutes.controlNumber}.png`))}
+            onClick={() => run('png', () => saveFramePng(frame.current, `${minutes.controlNumber}.png`))}
           >
             <ImageDown size={15} /> Save as PNG
           </LoadingButton>
@@ -284,3 +285,4 @@ export default function MeetingMinutesPage() {
     </main>
   );
 }
+
