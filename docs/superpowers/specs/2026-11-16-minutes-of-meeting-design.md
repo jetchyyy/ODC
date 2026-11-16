@@ -23,7 +23,7 @@ The Minutes of Meeting module supports both **internal team/board meetings** and
 │                                                                         │
 │  ┌───────────────────────┐             ┌─────────────────────────────┐  │
 │  │ navigationConfig.js   │             │ AdminMinutes.jsx            │  │
-│  │ minutes:manage        │ ──────────> │ (Metrics, Search, Filters,  │  │
+│  │ meetingminutes:manage │ ──────────> │ (Metrics, Search, Filters,  │  │
 │  │ Admin.jsx (Tab)       │             │  Detail Preview, Actions)   │  │
 │  └───────────────────────┘             └──────────────┬──────────────┘  │
 │                                                       │                 │
@@ -143,10 +143,10 @@ Default TipTap content includes:
 - `src/pages/MeetingMinutesPage.jsx` (+ `.css`): Public shareable route `/minutes-of-meeting/:id` showing live `MeetingMinutesFrame`, PDF/PNG download buttons, share link, particulars sidebar, signature audit trail, and e-signature form for open slots (auto-selecting `?sign=slotId` when present).
 
 ### 5.2 Navigation, App Routing & Security Rules
-- **`src/utils/navigationConfig.js`:** Add module `{ id: 'meetingminutes', label: 'Minutes of Meeting', desc: 'Meeting notes, decisions, action items & signoffs', icon: NotebookPen, color: '#38bdf8', actions: [{ id: 'minutes:manage', label: 'Manage Meeting Minutes', desc: 'Draft, issue, sign and revoke meeting minutes' }] }`.
+- **`src/utils/navigationConfig.js`:** Add module `{ id: 'meetingminutes', label: 'Minutes of Meeting', desc: 'Meeting notes, decisions, action items & signoffs', icon: NotebookPen, color: '#38bdf8', actions: [{ id: 'meetingminutes:manage', label: 'Manage Meeting Minutes', desc: 'Draft, issue, sign and revoke meeting minutes' }] }`.
 - **`src/pages/Admin.jsx` & `src/App.jsx`:** Wire `activeTab === 'meetingminutes'` to `<AdminMinutes />` and public route `/minutes-of-meeting/:id` to `<MeetingMinutesPage />`.
 - **`firestore.rules`:**
-  - `minutesAdmin()` checks `operationsRoot() || (request.auth != null && staffAction('minutes:manage'))`.
+  - `minutesAdmin()` checks `operationsRoot() || (request.auth != null && staffAction('meetingminutes:manage'))`.
   - `meetingMinutesCounters/{month}` allows `get`, monotonic `create`/`update` for `minutesAdmin()`.
   - `meetingMinutes/{minutesId}` allows `get` (`minutesAdmin()` or `status in ['issued', 'revoked']`), `list` (`minutesAdmin()`), `create` (`draft` only + counter check), `update` (`draft` edits, `draft -> issued`, `issued -> revoked`), `delete` (`draft` only).
   - `meetingMinutes/{minutesId}/signatures/{slotId}` allows `read` when parent readable; `create` only when parent `status == 'issued'`, valid `slotId`, valid keys & timestamp, normalized name match (or open if slot name is `''`), and `prepared`/`approved` slots restricted to `minutesAdmin()`, while `acknowledger` slots allow external/attendee e-signing via the shareable link. **Signing writes only to `signatures/{slotId}` and never modifies the parent `meetingMinutes` doc.**
@@ -157,3 +157,4 @@ Default TipTap content includes:
 - `tests/meetingMinutesDocument.test.js`: Control number formatting (`MOM-YYYY-MM-XXX`), `parseMeetingMinutesText` field/table/signer extraction, `markdownToHtml` table rendering, `editorContentOf`, `normalizeScopeHtml` `<thead>` lifting, `buildMeetingMinutesHtml` Brand Bible shell, single-line header safety, signature marks, and CSS pagination rules.
 - `tests/meetingMinutesService.test.js`: `meetingMinutesFields` validation, required `title` check, sanitization limits, `normalizeSignerName`, and signer mapping rules.
 - Run `npx eslint` on all touched files, `npm run build` for production compilation check, and deploy `firestore.rules` when approved.
+
