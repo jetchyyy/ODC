@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   ClipboardCheck,
   ReceiptText,
+  NotebookPen,
   Mail,
 } from 'lucide-react';
 import { CalendarBlank } from '@phosphor-icons/react';
@@ -196,6 +197,16 @@ export const ALL_ADMIN_NAVIGATIONS = [
     color: '#f59e0b',
     actions: [
       { id: 'quotations:manage', label: 'Manage Quotations', desc: 'Draft, issue, sign, and revoke quotations' },
+    ],
+  },
+  {
+    id: 'meetingminutes',
+    label: 'Minutes of Meeting',
+    desc: 'Meeting notes, decisions, action items & signoffs',
+    icon: NotebookPen,
+    color: '#38bdf8',
+    actions: [
+      { id: 'meetingminutes:manage', label: 'Manage Meeting Minutes', desc: 'Draft, issue, sign and revoke meeting minutes' },
     ],
   },
   {
