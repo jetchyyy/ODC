@@ -17,6 +17,7 @@ import {
 } from '@phosphor-icons/react';
 import { db } from '../../lib/firebase';
 import LoadingButton from '../ui/LoadingButton';
+import { MaintenanceValue } from './MaintenanceValue';
 
 const easeOut = [0.22, 1, 0.36, 1];
 
@@ -108,6 +109,7 @@ const DEFAULT_PLANS = [
 
 const DEFAULT_ADDONS = [
     { service: 'Additional minor request', price: 'PHP 500/request' },
+    { service: 'Additional small enhancement', price: 'PHP 1,500/request' },
     { service: 'Emergency same-day support', price: 'PHP 1,500+' },
     { service: 'Additional monthly backup', price: 'PHP 500/month' },
     { service: 'Server or hosting management', price: 'PHP 1,000+/month' },
@@ -390,6 +392,8 @@ export function PricingPlans({ standalone = false }) {
                         ))}
                     </div>
 
+                    <MaintenanceValue plans={plans} onSelectPlan={setSelectedPlan} />
+
                     <div className="pricing-detail-grid">
                         <Motion.div {...sectionMotion} className="pricing-minor-shell">
                             <div className="pricing-detail-header">
@@ -442,7 +446,7 @@ export function PricingPlans({ standalone = false }) {
                     </div>
 
                     <p className="pricing-footnote">
-                        Maintenance plans cover systems developed by OdysseyPH IT Solutions unless otherwise agreed. Unused monthly requests do not roll over.
+                        Maintenance plans cover systems developed by OdysseyPH IT Solutions unless otherwise agreed. Unused monthly requests do not roll over. Systems without an active plan are billed at pay-per-change rates.
                     </p>
                 </div>
             </section>

@@ -4423,6 +4423,319 @@ body::before {
   }
 }
 
+/* Maintenance value: plan guide, savings calculator, pay-per-change */
+.mv-shell {
+  border: 1px solid rgba(239, 255, 252, 0.09);
+  border-radius: clamp(1.15rem, 2vw, 1.75rem);
+  background: rgba(239, 255, 252, 0.035);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  padding: clamp(1.1rem, 2.4vw, 1.75rem);
+}
+
+.mv-guide {
+  margin-top: 0.9rem;
+}
+
+.mv-guide-table {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.mv-guide-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 1rem;
+  background: rgba(239, 255, 252, 0.045);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.16s ease;
+}
+
+.mv-guide-row.is-basic { --mv-accent: #bcecf2; }
+.mv-guide-row.is-standard { --mv-accent: #edc27f; }
+.mv-guide-row.is-premium { --mv-accent: #9ad8ba; }
+
+.mv-guide-row:hover,
+.mv-guide-row.is-active {
+  border-color: color-mix(in srgb, var(--mv-accent) 45%, transparent);
+  background: rgba(239, 255, 252, 0.07);
+}
+
+.mv-guide-row:active {
+  transform: scale(0.99);
+}
+
+.mv-guide-system {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+}
+
+.mv-guide-system svg {
+  flex: none;
+  margin-top: 0.1rem;
+  color: var(--mv-accent);
+}
+
+.mv-guide-system strong {
+  display: block;
+  color: #f8fffd;
+  font-size: 0.86rem;
+  letter-spacing: -0.02em;
+}
+
+.mv-guide-system small,
+.mv-rate-list small {
+  display: block;
+  margin-top: 0.15rem;
+  color: rgba(239, 255, 252, 0.48);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.mv-guide-usage {
+  color: rgba(239, 255, 252, 0.6);
+  font-size: 0.72rem;
+}
+
+.mv-guide-plan {
+  justify-self: end;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mv-accent) 16%, transparent);
+  color: var(--mv-accent);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-align: right;
+}
+
+.mv-hint {
+  margin: 0.8rem 0 0;
+  color: rgba(239, 255, 252, 0.38);
+  font-size: 0.68rem;
+}
+
+.mv-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
+  gap: 0.9rem;
+  margin-top: 0.9rem;
+}
+
+.mv-card-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.8rem;
+  align-items: start;
+  margin-bottom: 1.2rem;
+}
+
+.mv-card-head svg {
+  color: var(--cyan);
+}
+
+.mv-card-head h4 {
+  margin: 0.3rem 0 0;
+  color: #f8fffd;
+  font-size: clamp(1.15rem, 2.2vw, 1.5rem);
+  letter-spacing: -0.05em;
+}
+
+.mv-calculator {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.mv-slider {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.mv-slider > span {
+  display: flex;
+  justify-content: space-between;
+  color: rgba(239, 255, 252, 0.7);
+  font-size: 0.76rem;
+}
+
+.mv-slider strong {
+  color: #f8fffd;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.mv-slider input[type='range'] {
+  width: 100%;
+  accent-color: #edc27f;
+  cursor: pointer;
+}
+
+.mv-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.mv-compare > div {
+  border-radius: 1.1rem;
+  padding: 0.9rem 1rem;
+  background: rgba(239, 255, 252, 0.045);
+}
+
+.mv-compare > div.is-plan {
+  background: rgba(154, 216, 186, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(154, 216, 186, 0.25);
+}
+
+.mv-compare span,
+.mv-savings > span {
+  display: block;
+  color: rgba(239, 255, 252, 0.48);
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.mv-compare strong {
+  display: block;
+  margin-top: 0.4rem;
+  color: #f8fffd;
+  font-size: clamp(1.25rem, 2.6vw, 1.7rem);
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+}
+
+.mv-compare strong.is-strike {
+  color: rgba(239, 255, 252, 0.55);
+  text-decoration: line-through;
+  text-decoration-color: rgba(237, 140, 127, 0.7);
+}
+
+.mv-compare small {
+  color: rgba(239, 255, 252, 0.42);
+  font-size: 0.66rem;
+}
+
+.mv-savings {
+  border-radius: 1.1rem;
+  padding: 1rem 1.1rem;
+  background: linear-gradient(135deg, rgba(237, 194, 127, 0.16), rgba(154, 216, 186, 0.1));
+  box-shadow: inset 0 0 0 1px rgba(237, 194, 127, 0.25);
+}
+
+.mv-savings strong {
+  display: block;
+  margin-top: 0.35rem;
+  color: #edc27f;
+  font-size: clamp(1.8rem, 4.4vw, 2.6rem);
+  line-height: 1;
+  letter-spacing: -0.06em;
+  font-variant-numeric: tabular-nums;
+}
+
+.mv-savings strong small {
+  margin-left: 0.25rem;
+  color: rgba(239, 255, 252, 0.5);
+  font-size: 0.8rem;
+  letter-spacing: 0;
+}
+
+.mv-savings p {
+  margin: 0.55rem 0 0;
+  color: rgba(239, 255, 252, 0.66);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+.mv-savings.is-neutral {
+  background: rgba(239, 255, 252, 0.045);
+  box-shadow: none;
+}
+
+.mv-savings.is-neutral strong {
+  color: #f8fffd;
+  font-size: 1.1rem;
+  letter-spacing: -0.03em;
+}
+
+.mv-rate-list {
+  display: grid;
+}
+
+.mv-rate-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-top: 1px solid rgba(239, 255, 252, 0.07);
+  color: rgba(239, 255, 252, 0.78);
+  font-size: 0.76rem;
+}
+
+.mv-rate-list strong {
+  flex: none;
+  color: #edc27f;
+  font-size: 0.74rem;
+  text-align: right;
+}
+
+.mv-terms {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.9rem 0 0;
+  padding: 0.9rem 1rem 0.9rem 1.9rem;
+  border-radius: 1rem;
+  background: rgba(237, 140, 127, 0.07);
+  list-style: disc;
+  color: rgba(239, 255, 252, 0.6);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 980px) {
+  .mv-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .mv-guide-row {
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+  }
+
+  .mv-guide-usage {
+    padding-left: 1.8rem;
+  }
+
+  .mv-guide-plan {
+    justify-self: start;
+    margin-left: 1.8rem;
+  }
+
+  .mv-compare {
+    grid-template-columns: 1fr;
+  }
+
+  .mv-rate-list > div {
+    display: grid;
+    gap: 0.3rem;
+  }
+
+  .mv-rate-list strong {
+    text-align: left;
+  }
+}
+
 /* Portal login experience */
 .portal-login-page {
   --portal-accent: #bcecf2;
