@@ -31,6 +31,24 @@ import {
 
 const businessSystemShowcases = [
     {
+        title: 'Fade and Fit by CJ',
+        type: 'Barbershop booking platform',
+        logo: '/logos/fadeandfitbycj.jpg',
+        preview: '/fadeandfitbycj.jpg',
+        href: 'https://fadeandfitbycj.com',
+        description: 'A premium barbershop site on the ODC Barbershop Management System, with online appointment booking, services, and team profiles.',
+        theme: 'ink',
+    },
+    {
+        title: 'DapperCuts',
+        type: 'Barbershop booking platform',
+        logo: '/logos/dappercuts.png',
+        preview: '/dappercuts.jpg',
+        href: 'https://dappercutsph.com',
+        description: 'A multi-location style studio on the ODC Barbershop Management System, with online booking, barber profiles, services, and portfolio.',
+        theme: 'commerce',
+    },
+    {
         title: 'Firsel Tattoo',
         type: 'Artist portfolio',
         logo: '/logos/firseltattoologo.jpg',

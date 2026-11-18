@@ -37,6 +37,8 @@ export const clientLogos = [
   { name: 'Slide Two', src: '/logos/slidetwo.png' },
   { name: 'The Halo Hub', src: '/logos/thehalohub.jpg' },
   { name: 'KBDF Luxury', src: '/logos/kbdflogotext.jpg' },
+  { name: 'Fade and Fit by CJ', src: '/logos/fadeandfitbycj.jpg' },
+  { name: 'DapperCuts', src: '/logos/dappercuts.png' },
 ];
 
 // Two marquee rows moving in opposite directions; alternate logos so both rows mix industries.
