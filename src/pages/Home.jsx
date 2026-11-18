@@ -428,9 +428,28 @@ function HeroSection() {
 }
 
 
+// Each card behind the front one moves up by this much and shrinks by STACK_SHRINK.
+const STACK_STEP = 45;
+const STACK_SHRINK = 0.05;
+const STACK_TOP_GAP = 16;
+
 function BrowserStack({ title, projects }) {
     const [activeIndex, setActiveIndex] = useState(null);
     const stackRef = useRef(null);
+    const [cardHeight, setCardHeight] = useState(550);
+
+    // Cards scale from their centre, so each one's top only rises STACK_STEP minus half
+    // its shrink. Reserve exactly that rise so long stacks never hit the title and
+    // short ones don't leave a hole.
+    useEffect(() => {
+        const card = stackRef.current?.firstElementChild;
+        if (!card || typeof ResizeObserver === 'undefined') return undefined;
+        const observer = new ResizeObserver(() => setCardHeight(card.offsetHeight));
+        observer.observe(card);
+        return () => observer.disconnect();
+    }, []);
+    const risePerCard = Math.max(0, STACK_STEP - (STACK_SHRINK * cardHeight) / 2);
+    const stackRise = Math.round((projects.length - 1) * risePerCard) + STACK_TOP_GAP;
     // The stack fans out of a single card the first time it scrolls into view.
     const fanned = useInView(stackRef, { once: true, amount: 0.35 });
     const [settled, setSettled] = useState(false);
@@ -444,13 +463,13 @@ function BrowserStack({ title, projects }) {
     return (
         <Motion.div className="browser-stack-column" {...revealChild(fadeUp)}>
             <h3 className="stack-category-title">{title}</h3>
-            <div ref={stackRef} className="browser-stack-container" style={{ height: '550px', marginTop: '200px', perspective: '1000px' }}>
+            <div ref={stackRef} className="browser-stack-container" style={{ height: '550px', marginTop: `${stackRise}px`, perspective: '1000px' }}>
                 {projects.map((project, i) => {
                     const isActive = activeIndex === i;
                     // Front item is index 0. Subsequent items have lower z-index.
                     const zIndex = isActive ? 100 : projects.length - i;
-                    const restY = fanned ? -(i * 45) : 0;
-                    const restScale = fanned ? 1 - (i * 0.05) : 1 - (i * 0.01);
+                    const restY = fanned ? -(i * STACK_STEP) : 0;
+                    const restScale = fanned ? 1 - (i * STACK_SHRINK) : 1 - (i * 0.01);
 
                     return (
                         <Motion.div
@@ -465,8 +484,8 @@ function BrowserStack({ title, projects }) {
                                 zIndex: zIndex
                             }}
                             whileHover={!isActive ? {
-                                y: -(i * 45) - 20, // pop up slightly when hovered
-                                scale: 1 - (i * 0.05) + 0.02,
+                                y: -(i * STACK_STEP) - 20, // pop up slightly when hovered
+                                scale: 1 - (i * STACK_SHRINK) + 0.02,
                                 transition: { duration: 0.2 }
                             } : {}}
                             onClick={() => setActiveIndex(isActive ? null : i)}
